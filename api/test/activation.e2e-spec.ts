@@ -163,15 +163,40 @@ describe('Activation et reprise', () => {
       const { karim, demande } = await approuverDemandeDAmal();
       await modeBanque('SUCCES');
 
-      const [a, b] = await Promise.all([relancer(karim, demande.id), relancer(karim, demande.id)]);
+      const reponses = await Promise.all([
+        relancer(karim, demande.id),
+        relancer(karim, demande.id),
+      ]);
 
-      expect([a.status, b.status]).toEqual([200, 200]);
-      expect((a.body as ReponseDossier).demande.statut).toBe('ACTIVE');
-      expect((b.body as ReponseDossier).demande.statut).toBe('ACTIVE');
+      // L'ordre d'arrivée dépend de la machine : une relance qui charge le dossier APRÈS la fin de
+      // l'autre le trouve déjà Active, et la table des transitions la refuse (409 R13). Les deux
+      // issues sont correctes ; ce qui ne dépend jamais du timing, c'est l'activation unique.
+      for (const reponse of reponses) {
+        if (reponse.status === 200) {
+          expect((reponse.body as ReponseDossier).demande.statut).toBe('ACTIVE');
+        } else {
+          expect(reponse.status).toBe(409);
+          expect(codesDe(reponse)).toEqual(['R13']);
+        }
+      }
+      expect(reponses.some((r) => r.status === 200)).toBe(true);
       expect(await operationsBancaires()).toBe(1);
       expect((await evenements(demande.id)).filter((e) => e === 'ACTIVATION_REUSSIE')).toHaveLength(
         1,
       );
+    });
+
+    it('une relance arrivée après l’activation est refusée (409 R13), sans rien rejouer', async () => {
+      await modeBanque('ECHEC');
+      const { karim, demande } = await approuverDemandeDAmal();
+      await modeBanque('SUCCES');
+      await relancer(karim, demande.id);
+
+      const tardive = await relancer(karim, demande.id);
+
+      expect(tardive.status).toBe(409);
+      expect(codesDe(tardive)).toEqual(['R13']);
+      expect(await operationsBancaires()).toBe(1);
     });
 
     it('un échec arrivé en retard n’écrase jamais une activation réussie entre-temps', async () => {

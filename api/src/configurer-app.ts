@@ -2,11 +2,20 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import type { NextFunction, Request, Response } from 'express';
 import type { NestExpressApplication } from '@nestjs/platform-express';
+import { enTetesSecurite } from './http/en-tetes-securite';
+import { FiltreErreurs } from './http/filtre-erreurs';
+import { creerValidationPipe } from './http/validation';
 
 // Configuration commune à main.ts et aux tests d'API : les tests vérifient ainsi
 // exactement ce qui tourne en production.
 export function configurerApp(app: NestExpressApplication, dossierWeb: string): void {
   app.setGlobalPrefix('api');
+  // En premier : les en-têtes s'appliquent à toutes les réponses, frontend compris.
+  app.use(enTetesSecurite);
+  // Toutes les erreurs au format { erreurs: [...] } (règle 8).
+  app.useGlobalFilters(new FiltreErreurs());
+  // Toutes les entrées validées ; un champ non déclaré est refusé.
+  app.useGlobalPipes(creerValidationPipe());
 
   // Le frontend construit n'existe pas toujours (développement avec Vite, CI de l'API).
   if (!existsSync(join(dossierWeb, 'index.html'))) {

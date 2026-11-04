@@ -1,5 +1,7 @@
 import type { Role, UtilisateurSession } from '../auth/utilisateur-session';
+import { BanqueService } from '../banque/banque.service';
 import type { BaseService } from '../base/base.service';
+import { ActivationService } from '../demandes/activation.service';
 import { DemandesClientService } from '../demandes/demandes-client.service';
 import { DossiersService } from '../demandes/dossiers.service';
 import { HistoriqueService } from '../historique/historique.service';
@@ -13,7 +15,8 @@ import { HistoriqueService } from '../historique/historique.service';
 export async function creerDemandesDemo(base: BaseService, maintenant: Date): Promise<string[]> {
   const historique = new HistoriqueService(base);
   const clients = new DemandesClientService(base, historique);
-  const dossiers = new DossiersService(base, historique);
+  const activation = new ActivationService(base, historique, new BanqueService(base));
+  const dossiers = new DossiersService(base, historique, activation);
   const creees: string[] = [];
 
   // Un client de démonstration soumet une demande, s'il n'en a encore aucune.

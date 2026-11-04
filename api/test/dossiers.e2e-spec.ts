@@ -112,7 +112,7 @@ describe('Traitement des dossiers', () => {
   });
 
   describe('Scénario 1 : approbation par le conseiller', () => {
-    it('Karim approuve 25 000 DH : Approuvée, activation en attente, décision et événement', async () => {
+    it('Karim approuve 25 000 DH : décision, événement, puis activation dans la banque', async () => {
       const demande = await demandeDe(AMAL, 25_000);
       const karim = await appTest.connecter(KARIM);
 
@@ -125,16 +125,20 @@ describe('Traitement des dossiers', () => {
       );
 
       expect(reponse.status).toBe(200);
+      // L'approbation (version + 1) est suivie de l'activation par la banque (version + 1).
+      // Le détail de l'activation est testé dans activation.e2e-spec.ts.
       expect((reponse.body as ReponseDossier).demande).toMatchObject({
-        statut: 'APPROUVEE',
-        activationStatut: 'EN_ATTENTE',
-        version: demande.version + 1,
+        statut: 'ACTIVE',
+        activationStatut: 'REUSSIE',
+        version: demande.version + 2,
       });
       const detail = await p.dossier(karim, demande.id);
       expect(detail.decisions).toEqual([
         expect.objectContaining({ type: 'APPROBATION', role: 'CONSEILLER', acteur: 'Karim' }),
       ]);
-      expect(detail.historique.map((e) => e.action)).toContain('APPROBATION');
+      expect(detail.historique.map((e) => e.action)).toEqual(
+        expect.arrayContaining(['APPROBATION', 'ACTIVATION_REUSSIE']),
+      );
     });
   });
 
@@ -201,8 +205,8 @@ describe('Traitement des dossiers', () => {
       const version = (recommandee.body as ReponseDossier).demande.version;
       const approuvee = await p.decider(omar, soumise.id, 'approuver', version, 'Accord.');
       expect((approuvee.body as ReponseDossier).demande).toMatchObject({
-        statut: 'APPROUVEE',
-        activationStatut: 'EN_ATTENTE',
+        statut: 'ACTIVE',
+        activationStatut: 'REUSSIE',
       });
 
       // Le personnel voit tout ; le client ne voit jamais la recommandation (H19).

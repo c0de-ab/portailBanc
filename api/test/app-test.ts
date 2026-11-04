@@ -18,7 +18,9 @@ export async function demarrerAppTest(modules: Type[] = []) {
   const moduleRef = await Test.createTestingModule({ imports: [AppModule, ...modules] }).compile();
   const app = moduleRef.createNestApplication<NestExpressApplication>({ logger: false });
   configurerApp(app, dossierWeb);
-  await app.init();
+  // Écoute sur un port libre (et non simple init) : supertest réutilise ce serveur, même quand
+  // une requête est préparée avant qu'une autre soit attendue.
+  await app.listen(0);
 
   return {
     app,

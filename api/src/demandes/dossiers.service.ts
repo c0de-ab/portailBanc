@@ -10,6 +10,7 @@ import {
   justificatifATelecharger,
   type JustificatifATelecharger,
 } from '../justificatifs/justificatif';
+import { ActivationService } from './activation.service';
 import { COLONNES_DEMANDE, type Demande, type LigneDemande, versDemande } from './demande';
 import { introuvable, refuser, versionPerimee } from './refus';
 import { tracerLesRefus } from './tracer-refus';
@@ -66,6 +67,7 @@ export class DossiersService {
   constructor(
     private readonly base: BaseService,
     private readonly historique: HistoriqueService,
+    private readonly activation: ActivationService,
   ) {}
 
   async lister(agent: UtilisateurSession): Promise<Demande[]> {
@@ -247,11 +249,12 @@ export class DossiersService {
         action === 'recommander' ? `RECOMMANDATION_${avis}` : TYPE_DU_DOMAINE[action];
       const recommenderId = action === 'recommander' ? agent.id : demande.recommenderId;
       // Couplage (docs/etats-transitions.md, § 3) : l'approbation met l'activation En attente,
-      // dans la même transaction. L'appel à la banque simulée viendra juste après (étape 6).
+      // dans la même transaction ; l'appel à la banque est fait juste après le COMMIT.
       const activationStatut = action === 'approuver' ? 'EN_ATTENTE' : demande.activationStatut;
 
+      let decidee: Demande;
       try {
-        return await this.base.transaction(async (tx) => {
+        decidee = await this.base.transaction(async (tx) => {
           const { rows } = await tx.query<LigneDemande>(
             `UPDATE requests
                 SET statut = $4, version = version + 1, recommender_id = $5,
@@ -303,6 +306,63 @@ export class DossiersService {
         }
         throw erreur;
       }
+
+      // Après une approbation : l'activation dans la banque simulée. La réponse indique son
+      // résultat (Active, ou Approuvée avec l'activation en échec ou inconnue).
+      return action === 'approuver' ? this.activation.activer(id, maintenant) : decidee;
+    });
+  }
+
+  // « Relancer » (H12, H15) : une action utilisateur, filtrée par le périmètre et tracée, mais
+  // conditionnée au SEUL statut Approuvée, sans version : elle ne prend aucune décision, elle
+  // rejoue l'activation avec la même clé. Possible depuis Échec, Résultat inconnu ou En attente.
+  relancer(agent: UtilisateurSession, id: string, maintenant: Date): Promise<Demande> {
+    return tracerLesRefus(this.historique, agent, 'relancer', id, maintenant, async () => {
+      const demande = await this.charger(agent, id);
+      const transition = etatApres('relancer', demande.statut);
+      if (!transition.possible) {
+        throw refuser([transition.erreur]);
+      }
+      // H12 : le conseiller du dossier, ou un superviseur de l'équipe si le dossier lui a été transmis.
+      const conseillerDuDossier =
+        agent.roles.includes('CONSEILLER') && demande.advisorId === agent.id;
+      const superviseurDeLEquipe =
+        agent.roles.includes('SUPERVISEUR') &&
+        demande.teamId === agent.teamId &&
+        demande.recommenderId !== null;
+      if (!conseillerDuDossier && !superviseurDeLEquipe) {
+        throw new ErreurApi(HttpStatus.FORBIDDEN, [
+          {
+            code: 'ROLE',
+            message:
+              "Seuls le conseiller du dossier ou un superviseur de l'équipe peuvent relancer.",
+          },
+        ]);
+      }
+
+      await this.base.transaction(async (tx) => {
+        const { rowCount } = await tx.query(
+          `UPDATE requests SET activation_statut = 'EN_ATTENTE', derniere_erreur = NULL,
+                  updated_at = $2
+            WHERE id = $1 AND statut = 'APPROUVEE'`,
+          [id, maintenant],
+        );
+        // Une autre relance a déjà activé la demande : rien à tracer, l'état final est renvoyé.
+        if (rowCount === 1) {
+          await this.historique.ecrire(
+            {
+              action: 'RELANCE',
+              acteurId: agent.id,
+              requestId: id,
+              reference: demande.reference,
+              requestVersion: demande.version,
+              date: maintenant,
+            },
+            tx,
+          );
+        }
+      });
+      return this.activation.activer(id, maintenant);
     });
   }
 

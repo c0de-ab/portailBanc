@@ -97,6 +97,16 @@ export class DossiersController {
     return { demande: vueDossier(demande) };
   }
 
+  // Sans corps ni version : la relance ne dépend que du statut Approuvée (H15).
+  @Post(':id/relancer')
+  @HttpCode(HttpStatus.OK)
+  async relancer(
+    @UtilisateurConnecte() agent: UtilisateurSession,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return { demande: vueDossier(await this.dossiers.relancer(agent, id, new Date())) };
+  }
+
   private async decider(
     agent: UtilisateurSession,
     id: string,

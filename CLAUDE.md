@@ -92,6 +92,7 @@ Dans l'image Docker de production, les outils de développement (`ts-node`, `tsx
 7. **Banque simulée :** clé fixe `act-<id>` ou `desact-<id>`. Les écritures de succès **et** d'échec sont conditionnées au statut `APPROUVEE` (activation) ou `ACTIVE` (désactivation). L'appel est synchrone, avec un délai de 3 s, et la réponse HTTP indique le résultat. Les modes `ECHEC` et `REPONSE_PERDUE` ne s'appliquent qu'aux nouvelles clés : une clé déjà connue renvoie toujours son résultat enregistré (H16). `date_activation` est la date d'application renvoyée par la banque dans `resultat` (H17).
 8. **Erreurs :** un format unique, `{ erreurs: [{ code, champ, message }] }`, où `code` est le code de la règle (par exemple `R4`). `champ` est facultatif : une erreur de version, par exemple, ne porte sur aucun champ. La soumission renvoie toutes les erreurs à la fois. Codes HTTP :
    - **400** : entrée mal formée (type faux, champ inconnu, champ requis absent), code `VALIDATION`, avec une erreur par champ. À distinguer d'une règle métier non respectée (422) ;
+   - **413** : justificatif de plus de 2 Mo, code `VALIDATION`, champ `fichier` (statut produit par Multer) ;
    - **401** : non connecté, ou identifiants refusés, code `AUTH` ;
    - **422** : contenu invalide (R1 à R5, R10) ;
    - **409** : conflit d'état ou de version (R6, R7, R11, R12, R13, et transition impossible, code `TRANSITION`) ;

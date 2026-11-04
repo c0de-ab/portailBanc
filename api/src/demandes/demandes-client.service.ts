@@ -1,4 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
+import { mkdir, writeFile } from 'node:fs/promises';
+import { HttpStatus, Injectable } from '@nestjs/common';
 import { DatabaseError, type PoolClient } from 'pg';
 import type { UtilisateurSession } from '../auth/utilisateur-session';
 import { BaseService } from '../base/base.service';
@@ -8,6 +10,16 @@ import { type ContexteDemande, verifierRegles } from '../domain/regles';
 import { type Action, etatApres, type StatutDemande } from '../domain/transitions';
 import { ErreurApi } from '../http/erreur-api';
 import { HistoriqueService } from '../historique/historique.service';
+import {
+  cheminDe,
+  detecterType,
+  dossierJustificatifs,
+  type FichierRecu,
+  nomAffichable,
+  TYPE_MIME,
+  typeDe,
+  type TypeJustificatif,
+} from '../justificatifs/justificatif';
 import { COLONNES_DEMANDE, type Demande, type LigneDemande, versDemande } from './demande';
 import { introuvable, refuser, versionPerimee } from './refus';
 
@@ -393,6 +405,83 @@ export class DemandesClientService {
     return this.changerStatut(client, id, 'annuler', 'ANNULATION', version, maintenant);
   }
 
+  // Dépose le justificatif, en Brouillon ou en Complément demandé : c'est une modification du
+  // contenu, la version avance. Un nouveau dépôt remplace le justificatif de la demande, mais
+  // l'ancien fichier n'est jamais supprimé (une révision peut y faire référence).
+  deposerJustificatif(
+    client: UtilisateurSession,
+    id: string,
+    version: number,
+    fichier: FichierRecu | undefined,
+    maintenant: Date,
+  ): Promise<DemandeEtAvertissements> {
+    return this.tracerLesRefus(client, 'deposerJustificatif', id, maintenant, async () => {
+      const demande = await this.charger(client, id);
+      this.verifierVersion(demande, version);
+      this.verifierTransition('modifier', demande.statut);
+
+      const type = controlerFichier(fichier);
+      // Le nom sur le disque est généré par le serveur ; le nom d'origine ne sert qu'à l'affichage.
+      const nomStocke = `${randomUUID()}.${type}`;
+      const nomAffiche = nomAffichable(fichier!.originalname);
+      await mkdir(dossierJustificatifs(), { recursive: true });
+
+      const modifiee = await this.base.transaction(async (tx) => {
+        const { rows } = await tx.query<LigneDemande>(
+          `UPDATE requests
+              SET justificatif_fichier = $5, justificatif_nom = $6,
+                  version = version + 1, updated_at = $7
+            WHERE id = $1 AND client_id = $2 AND version = $3 AND statut = $4
+            RETURNING ${COLONNES_DEMANDE}`,
+          [id, client.clientId, version, demande.statut, nomStocke, nomAffiche, maintenant],
+        );
+        if (!rows[0]) {
+          throw versionPerimee();
+        }
+        // Écrit AVANT le COMMIT : si l'écriture échoue, la mise à jour est annulée.
+        // « wx » : un fichier existant n'est jamais écrasé.
+        await writeFile(cheminDe(nomStocke), fichier!.buffer, { flag: 'wx' });
+        const resultat = versDemande(rows[0]);
+        await this.historique.ecrire(
+          {
+            action: 'JUSTIFICATIF_DEPOSE',
+            acteurId: client.id,
+            requestId: id,
+            reference: resultat.reference,
+            requestVersion: resultat.version,
+            details: { type, taille: fichier!.size },
+            date: maintenant,
+          },
+          tx,
+        );
+        return resultat;
+      });
+
+      return { demande: modifiee, avertissements: await this.avertissements(modifiee) };
+    });
+  }
+
+  // Le justificatif à télécharger, après le filtre de périmètre (404 sinon).
+  lireJustificatif(
+    client: UtilisateurSession,
+    id: string,
+    maintenant: Date,
+  ): Promise<{ chemin: string; typeMime: string; nomAffiche: string }> {
+    return this.tracerLesRefus(client, 'telechargerJustificatif', id, maintenant, async () => {
+      const demande = await this.charger(client, id);
+      if (!demande.justificatifFichier) {
+        throw new ErreurApi(HttpStatus.NOT_FOUND, [
+          { code: 'INTROUVABLE', message: 'Aucun justificatif pour cette demande.' },
+        ]);
+      }
+      return {
+        chemin: cheminDe(demande.justificatifFichier),
+        typeMime: TYPE_MIME[typeDe(demande.justificatifFichier)],
+        nomAffiche: demande.justificatifNom ?? 'justificatif',
+      };
+    });
+  }
+
   // ---------------------------------------------------------------------------------------
 
   // Une transition sans changement de contenu : seul le statut change.
@@ -528,6 +617,27 @@ function contenuDe(demande: Demande) {
     motif: demande.motif,
     justificatifPresent: demande.justificatifFichier !== null,
   };
+}
+
+// Le fichier reçu doit exister, et son type RÉEL, lu sur ses premiers octets, doit être accepté
+// ET correspondre au type annoncé par le navigateur. La taille (2 Mo) est déjà bornée par Multer.
+function controlerFichier(fichier: FichierRecu | undefined): TypeJustificatif {
+  if (!fichier) {
+    throw new ErreurApi(HttpStatus.BAD_REQUEST, [
+      { code: 'VALIDATION', champ: 'fichier', message: 'Le justificatif est obligatoire.' },
+    ]);
+  }
+  const type = detecterType(fichier.buffer);
+  if (!type || TYPE_MIME[type] !== fichier.mimetype) {
+    throw new ErreurApi(HttpStatus.BAD_REQUEST, [
+      {
+        code: 'VALIDATION',
+        champ: 'fichier',
+        message: 'Le justificatif doit être un fichier PDF, JPEG ou PNG.',
+      },
+    ]);
+  }
+  return type;
 }
 
 // R7 : ce que le client a confirmé ne correspond plus à la demande.

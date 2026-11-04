@@ -8,14 +8,24 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Put,
   Res,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
 import { Roles, RolesGuard, UtilisateurConnecte } from '../auth/guards';
 import type { UtilisateurSession } from '../auth/utilisateur-session';
+import { type FichierRecu, TAILLE_MAXIMUM } from '../justificatifs/justificatif';
 import { vueClient } from './demande';
-import { ModifierDemandeDto, SoumettreDto, VersionDto } from './demandes-client.dto';
+import {
+  ModifierDemandeDto,
+  SoumettreDto,
+  VersionDto,
+  VersionFormulaireDto,
+} from './demandes-client.dto';
 import { DemandesClientService } from './demandes-client.service';
 
 // Les routes du client. Aucune logique métier ici (CLAUDE.md, règle 2) : le controller lit
@@ -108,5 +118,53 @@ export class DemandesClientController {
     @Body() { version }: VersionDto,
   ) {
     return { demande: vueClient(await this.demandes.annuler(client, id, version, new Date())) };
+  }
+
+  // Formulaire multipart : le fichier dans le champ « fichier », et la version.
+  // Multer garde le fichier en mémoire (2 Mo au plus, un seul fichier) : rien n'est écrit sur
+  // le disque avant les contrôles du service. Au-delà de 2 Mo : 413.
+  @Put('demandes/:id/justificatif')
+  @UseInterceptors(
+    FileInterceptor('fichier', {
+      limits: { fileSize: TAILLE_MAXIMUM, files: 1, fields: 5 },
+      // Les navigateurs envoient le nom en UTF-8 ; Multer le lirait en latin-1 par défaut
+      // (« facture-été.pdf » deviendrait « facture-Ã©tÃ©.pdf »).
+      defParamCharset: 'utf8',
+    }),
+  )
+  async deposerJustificatif(
+    @UtilisateurConnecte() client: UtilisateurSession,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() { version }: VersionFormulaireDto,
+    @UploadedFile() fichier: FichierRecu | undefined,
+  ) {
+    const { demande, avertissements } = await this.demandes.deposerJustificatif(
+      client,
+      id,
+      version,
+      fichier,
+      new Date(),
+    );
+    return { demande: vueClient(demande), avertissements };
+  }
+
+  // Téléchargement : toujours en pièce jointe, jamais affiché dans la page, et jamais en cache.
+  @Get('demandes/:id/justificatif')
+  async telechargerJustificatif(
+    @UtilisateurConnecte() client: UtilisateurSession,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Res() res: Response,
+  ): Promise<void> {
+    const { chemin, typeMime, nomAffiche } = await this.demandes.lireJustificatif(
+      client,
+      id,
+      new Date(),
+    );
+    // attachment() encode le nom d'origine dans Content-Disposition. Le type est fixé APRÈS :
+    // il vient du type détecté à l'envoi, jamais de l'extension choisie par le client.
+    res.attachment(nomAffiche);
+    res.setHeader('Content-Type', typeMime);
+    res.setHeader('Cache-Control', 'no-store');
+    res.sendFile(chemin);
   }
 }

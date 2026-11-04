@@ -30,6 +30,8 @@ COPY --from=build-api /app/api/dist ./dist
 COPY api/migrations ./migrations
 # Même chemin relatif qu'en local : api/dist/main.js -> web/dist.
 COPY --from=build-web /app/web/dist /app/web/dist
+# Dossier des justificatifs (volume dans Docker Compose), accessible en écriture à l'utilisateur node.
+RUN mkdir -p uploads && chown node:node uploads
 USER node
 EXPOSE 3000
 # Au démarrage : migrations, comptes de démonstration (seulement si DEMO_MODE=true ;

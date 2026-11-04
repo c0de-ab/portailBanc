@@ -1,3 +1,4 @@
+import { Type } from 'class-transformer';
 import { IsInt, IsOptional, IsString, MaxLength, Min } from 'class-validator';
 
 // Corps des routes du client. Tout champ non déclaré ici (statut, reference, clientId…) est
@@ -27,6 +28,15 @@ export class ModifierDemandeDto extends VersionDto {
   @IsString({ message: 'Le motif doit être un texte.' })
   @MaxLength(2000, { message: 'Le motif ne peut pas dépasser 2 000 caractères.' })
   motif?: string | null;
+}
+
+// Le dépôt du justificatif est un formulaire multipart : ses champs arrivent sous forme de
+// texte, d'où la conversion explicite de la version en nombre avant la validation.
+export class VersionFormulaireDto {
+  @Type(() => Number)
+  @IsInt(VERSION)
+  @Min(1, VERSION)
+  version!: number;
 }
 
 // R7 : le client renvoie ce qu'il a vu et confirmé, avec la version transmise sans être affichée.

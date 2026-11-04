@@ -19,6 +19,12 @@ const ERREURS_GENERIQUES: Record<number, ErreurDetaillee> = {
     message: "Vous n'avez pas le droit d'effectuer cette action.",
   },
   [HttpStatus.NOT_FOUND]: { code: 'INTROUVABLE', message: "Cette ressource n'existe pas." },
+  // Produit par Multer quand le justificatif dépasse 2 Mo.
+  [HttpStatus.PAYLOAD_TOO_LARGE]: {
+    code: 'VALIDATION',
+    champ: 'fichier',
+    message: 'Le fichier envoyé dépasse la taille autorisée (2 Mo).',
+  },
 };
 
 const ERREUR_INTERNE: ErreurDetaillee = {

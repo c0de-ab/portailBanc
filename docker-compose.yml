@@ -31,9 +31,13 @@ services:
       DEMO_MODE: 'true'
     ports:
       - '3000:3000'
+    volumes:
+      # Les justificatifs survivent à la reconstruction du conteneur ; jamais dans l'image ni dans Git.
+      - uploads:/app/api/uploads
     depends_on:
       db:
         condition: service_healthy
 
 volumes:
   db-data:
+  uploads:

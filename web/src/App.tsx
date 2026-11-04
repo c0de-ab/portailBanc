@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react';
 import { BrowserRouter, Link, Navigate, Route, Routes } from 'react-router';
 import { Connexion } from './pages/Connexion';
+import { DetailDossier } from './pages/banque/DetailDossier';
+import { ListeDossiers } from './pages/banque/ListeDossiers';
 import { Assistant } from './pages/client/Assistant';
 import { DetailDemande } from './pages/client/DetailDemande';
 import { FormulaireDemande } from './pages/client/FormulaireDemande';
@@ -59,7 +61,15 @@ export function App() {
             path="/banque"
             element={
               <Protege role="CONSEILLER">
-                <EspaceBanque />
+                <ListeDossiers />
+              </Protege>
+            }
+          />
+          <Route
+            path="/banque/dossiers/:id"
+            element={
+              <Protege role="CONSEILLER">
+                <DetailDossier />
               </Protege>
             }
           />
@@ -115,16 +125,6 @@ function Cadre({ children }: { children: ReactNode }) {
         </button>
       </header>
       <main className="page">{children}</main>
-    </>
-  );
-}
-
-// Écrans du conseiller et du superviseur : étape 8c.
-function EspaceBanque() {
-  return (
-    <>
-      <h1>Espace conseiller</h1>
-      <p>Les écrans de traitement des dossiers arrivent à l’étape suivante.</p>
     </>
   );
 }

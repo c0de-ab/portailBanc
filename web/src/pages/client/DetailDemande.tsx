@@ -10,7 +10,7 @@ import {
   type DetailDemande as Detail,
   type ErreurDetaillee,
 } from '../../types';
-import { ListeErreurs } from './FormulaireDemande';
+import { ListeErreurs } from '../../composants';
 
 const ANNULABLE = ['SOUMISE', 'COMPLEMENT_DEMANDE', 'ATTENTE_SUPERVISEUR'];
 

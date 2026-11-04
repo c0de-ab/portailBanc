@@ -547,3 +547,85 @@ input[inputmode='numeric'] {
   grid-column: 1 / -1;
   font-weight: 600;
 }
+
+/* Espace banque */
+
+.liste-dossiers {
+  list-style: none;
+  padding: 0;
+}
+
+.liste-dossiers li {
+  display: grid;
+  grid-template-columns: 9rem 9rem 1fr;
+  gap: 0.125rem 1rem;
+  margin: 0;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--ligne);
+}
+
+.liste-dossiers li .discret {
+  grid-column: 3;
+}
+
+.panneau-decision {
+  margin: 2rem 0;
+  padding: 1rem 1.25rem 1.25rem;
+  background: var(--surface);
+  border: 1px solid var(--ligne);
+  border-radius: 6px;
+}
+
+.panneau-decision h2 {
+  margin-top: 0;
+}
+
+.panneau-decision .actions {
+  margin-top: 1rem;
+}
+
+.bouton-secondaire {
+  background: var(--surface);
+  color: var(--erreur);
+  border: 1px solid var(--erreur);
+}
+
+.bouton-secondaire:hover {
+  background: var(--erreur-fond);
+}
+
+.bouton-secondaire:disabled {
+  background: var(--surface);
+  color: #b9a1a4;
+  border-color: #d9c4c6;
+}
+
+.mode-banque {
+  margin: 1rem 0 1.5rem;
+}
+
+.mode-banque label {
+  display: grid;
+  gap: 0.375rem;
+  font-weight: 600;
+  max-width: 20rem;
+}
+
+.mode-banque p {
+  margin: 0.375rem 0 0;
+}
+
+.historique {
+  font-size: 0.9375rem;
+}
+
+@media (max-width: 40rem) {
+  .liste-dossiers li {
+    grid-template-columns: 1fr;
+  }
+
+  .liste-dossiers li .discret {
+    grid-column: 1;
+  }
+}

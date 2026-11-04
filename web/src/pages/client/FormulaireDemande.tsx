@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { api, ErreurApi, type AvecAvertissements } from '../../api';
+import { ListeErreurs } from '../../composants';
 import {
   enDirhams,
   PLAFOND_MAXIMUM,
@@ -380,21 +381,6 @@ function Avertissements({ avertissements }: { avertissements: ErreurDetaillee[] 
           </ul>
         </div>
       )}
-    </div>
-  );
-}
-
-export function ListeErreurs({ erreurs }: { erreurs: ErreurDetaillee[] }) {
-  if (erreurs.length === 0) {
-    return null;
-  }
-  return (
-    <div className="message message-erreur" role="alert">
-      <ul>
-        {erreurs.map((e, i) => (
-          <li key={i}>{e.message}</li>
-        ))}
-      </ul>
     </div>
   );
 }

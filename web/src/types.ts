@@ -124,6 +124,8 @@ export const LIBELLE_DECISION: Record<string, string> = {
   DEMANDE_COMPLEMENT: 'Complément demandé',
   APPROBATION: 'Approuvée',
   REJET: 'Rejetée',
+  RECOMMANDATION_FAVORABLE: 'Recommandation favorable',
+  RECOMMANDATION_DEFAVORABLE: 'Recommandation défavorable',
 };
 
 // Le chat de l'agent (POST /api/agent/messages). Trois natures de message, à ne jamais confondre :
@@ -144,3 +146,88 @@ export type ElementAgent =
   | { type: 'explication'; texte: string }
   | { type: 'action'; texte: string; demandeId: string }
   | { type: 'confirmation'; carte: CarteConfirmation };
+
+// Le traitement des dossiers par le personnel de la banque (étape 8c).
+export type Dossier = Demande & {
+  advisorId: string | null;
+  teamId: string | null;
+  recommenderId: string | null;
+  derniereErreur: string | null;
+};
+
+export type DetailDossier = {
+  demande: Dossier;
+  client: { nom: string; dossierComplet: boolean };
+  compte: { numero: string; plafondInitial: number };
+  revisions: DetailDemande['revisions'];
+  // Le personnel voit toutes les décisions, recommandations comprises (H19).
+  decisions: {
+    type: string;
+    acteur: string;
+    role: Role;
+    motif: string;
+    requestVersion: number;
+    revisionNo: number;
+    decideeLe: string;
+  }[];
+  historique: {
+    action: string;
+    acteur: string | null;
+    viaAgent: boolean;
+    requestVersion: number | null;
+    motif: string | null;
+    date: string;
+  }[];
+};
+
+export type ModeBanque = 'SUCCES' | 'ECHEC' | 'REPONSE_PERDUE';
+
+export const LIBELLE_MODE_BANQUE: Record<ModeBanque, string> = {
+  SUCCES: 'Normal',
+  ECHEC: 'Échec des opérations',
+  REPONSE_PERDUE: 'Réponse perdue',
+};
+
+// Ce que voit le personnel : le statut interne, plus précis que le libellé client.
+export const LIBELLE_STATUT: Record<StatutDemande, string> = {
+  BROUILLON: 'Brouillon',
+  SOUMISE: 'Soumise',
+  COMPLEMENT_DEMANDE: 'Complément demandé',
+  ATTENTE_SUPERVISEUR: 'En attente du superviseur',
+  APPROUVEE: 'Approuvée',
+  ACTIVE: 'Active',
+  EXPIREE: 'Expirée',
+  REJETEE: 'Rejetée',
+  ANNULEE: 'Annulée',
+  ABANDONNEE: 'Abandonnée',
+};
+
+export const LIBELLE_EXECUTION: Record<StatutExecution, string> = {
+  EN_ATTENTE: 'en attente',
+  REUSSIE: 'réussie',
+  ECHEC: 'en échec',
+  INCONNU: 'résultat inconnu',
+};
+
+export function libelleDossier(d: Dossier): { texte: string; ton: Ton } {
+  const texte = LIBELLE_STATUT[d.statut];
+  switch (d.statut) {
+    case 'SOUMISE':
+    case 'ATTENTE_SUPERVISEUR':
+      return { texte, ton: 'action' };
+    case 'APPROUVEE':
+      return {
+        texte: `${texte}, activation ${LIBELLE_EXECUTION[d.activationStatut ?? 'EN_ATTENTE']}`,
+        ton:
+          d.activationStatut === 'ECHEC' || d.activationStatut === 'INCONNU' ? 'refus' : 'attente',
+      };
+    case 'ACTIVE':
+      return { texte, ton: 'actif' };
+    case 'REJETEE':
+      return { texte, ton: 'refus' };
+    case 'COMPLEMENT_DEMANDE':
+      return { texte, ton: 'attente' };
+    default:
+      return { texte, ton: 'termine' };
+  }
+}

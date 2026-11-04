@@ -10,7 +10,7 @@ import {
   type ElementAgent,
   type ErreurDetaillee,
 } from '../../types';
-import { ListeErreurs } from './FormulaireDemande';
+import { ListeErreurs } from '../../composants';
 
 // Le chat du client avec l'agent. Trois natures de message, présentées différemment :
 // - donnée du système : le résultat d'un outil, lu en base par le serveur ;

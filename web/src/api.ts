@@ -2,7 +2,10 @@ import type {
   Compte,
   Demande,
   DetailDemande,
+  DetailDossier,
+  Dossier,
   ElementAgent,
+  ModeBanque,
   ErreurDetaillee,
   Utilisateur,
 } from './types';
@@ -97,4 +100,28 @@ export const api = {
   // est indisponible (IA_INDISPONIBLE) : les formulaires restent utilisables.
   envoyerMessage: (message: string) =>
     appeler<{ elements: ElementAgent[] }>('POST', '/agent/messages', { message }),
+
+  // Personnel de la banque. Le périmètre est filtré par le serveur (R14) ; chaque décision
+  // renvoie la version lue (R11) et un motif (R10).
+  dossiers: () => appeler<{ dossiers: Dossier[] }>('GET', '/dossiers'),
+  dossier: (id: string) => appeler<DetailDossier>('GET', `/dossiers/${id}`),
+  decider: (d: Dossier, action: 'demander-complement' | 'approuver' | 'rejeter', motif: string) =>
+    appeler<{ demande: Dossier }>('POST', `/dossiers/${d.id}/${action}`, {
+      version: d.version,
+      motif,
+    }),
+  recommander: (d: Dossier, avis: 'FAVORABLE' | 'DEFAVORABLE', motif: string) =>
+    appeler<{ demande: Dossier }>('POST', `/dossiers/${d.id}/recommander`, {
+      version: d.version,
+      motif,
+      avis,
+    }),
+  // Sans version (H15) : la relance ne prend aucune décision.
+  relancer: (d: Dossier) => appeler<{ demande: Dossier }>('POST', `/dossiers/${d.id}/relancer`),
+  lienJustificatifDossier: (id: string) => `/api/dossiers/${id}/justificatif`,
+
+  // Démonstration seulement (DEMO_MODE=true) : sinon la route répond 404.
+  modeBanque: () => appeler<{ mode: ModeBanque }>('GET', '/demo/banque/mode'),
+  changerModeBanque: (mode: ModeBanque) =>
+    appeler<{ mode: ModeBanque }>('POST', '/demo/banque/mode', { mode }),
 };

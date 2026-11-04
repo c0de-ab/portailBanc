@@ -15,13 +15,15 @@ import {
   detecterType,
   dossierJustificatifs,
   type FichierRecu,
+  justificatifATelecharger,
+  type JustificatifATelecharger,
   nomAffichable,
   TYPE_MIME,
-  typeDe,
   type TypeJustificatif,
 } from '../justificatifs/justificatif';
 import { COLONNES_DEMANDE, type Demande, type LigneDemande, versDemande } from './demande';
 import { introuvable, refuser, versionPerimee } from './refus';
+import { tracerLesRefus } from './tracer-refus';
 
 // Les statuts « en cours » de R6, ceux de l'index uq_demande_en_cours.
 const STATUTS_EN_COURS: StatutDemande[] = [
@@ -466,19 +468,10 @@ export class DemandesClientService {
     client: UtilisateurSession,
     id: string,
     maintenant: Date,
-  ): Promise<{ chemin: string; typeMime: string; nomAffiche: string }> {
+  ): Promise<JustificatifATelecharger> {
     return this.tracerLesRefus(client, 'telechargerJustificatif', id, maintenant, async () => {
       const demande = await this.charger(client, id);
-      if (!demande.justificatifFichier) {
-        throw new ErreurApi(HttpStatus.NOT_FOUND, [
-          { code: 'INTROUVABLE', message: 'Aucun justificatif pour cette demande.' },
-        ]);
-      }
-      return {
-        chemin: cheminDe(demande.justificatifFichier),
-        typeMime: TYPE_MIME[typeDe(demande.justificatifFichier)],
-        nomAffiche: demande.justificatifNom ?? 'justificatif',
-      };
+      return justificatifATelecharger(demande.justificatifFichier, demande.justificatifNom);
     });
   }
 
@@ -582,31 +575,15 @@ export class DemandesClientService {
     return verifierRegles(contenuDe(demande), await this.contexte(demande.accountId));
   }
 
-  // Règle 11 : tout refus est tracé, à un seul endroit. L'écriture a lieu APRÈS l'annulation
-  // de la transaction, sinon elle serait annulée avec elle. Le chargement avec le filtre de
-  // périmètre est à l'intérieur : un accès hors périmètre est tracé lui aussi.
-  // L'identifiant visé va dans `details`, jamais dans request_id : un dossier hors périmètre
-  // n'est pas rattaché à l'historique de quelqu'un d'autre.
-  private async tracerLesRefus<T>(
+  // Règle 11 : voir tracer-refus.ts, commun au client et au personnel.
+  private tracerLesRefus<T>(
     acteur: UtilisateurSession,
     action: string,
     cible: string,
     maintenant: Date,
     travail: () => Promise<T>,
   ): Promise<T> {
-    try {
-      return await travail();
-    } catch (erreur) {
-      if (erreur instanceof ErreurApi) {
-        await this.historique.ecrire({
-          action: 'REFUS',
-          acteurId: acteur.id,
-          details: { action, cible, codes: erreur.erreurs.map((e) => e.code) },
-          date: maintenant,
-        });
-      }
-      throw erreur;
-    }
+    return tracerLesRefus(this.historique, acteur, action, cible, maintenant, travail);
   }
 }
 

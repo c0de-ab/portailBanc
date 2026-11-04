@@ -137,3 +137,21 @@ export function vueClient(demande: Demande): VueDemandeClient {
     updatedAt: demande.updatedAt,
   };
 }
+
+// Ce que le PERSONNEL voit d'une demande : tout, sauf le nom du fichier sur le disque.
+export type VueDossier = VueDemandeClient & {
+  advisorId: string | null;
+  teamId: string | null;
+  recommenderId: string | null;
+  derniereErreur: string | null;
+};
+
+export function vueDossier(demande: Demande): VueDossier {
+  return {
+    ...vueClient(demande),
+    advisorId: demande.advisorId,
+    teamId: demande.teamId,
+    recommenderId: demande.recommenderId,
+    derniereErreur: demande.derniereErreur,
+  };
+}

@@ -18,7 +18,11 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
 import { Roles, RolesGuard, UtilisateurConnecte } from '../auth/guards';
 import type { UtilisateurSession } from '../auth/utilisateur-session';
-import { type FichierRecu, TAILLE_MAXIMUM } from '../justificatifs/justificatif';
+import {
+  envoyerJustificatif,
+  type FichierRecu,
+  TAILLE_MAXIMUM,
+} from '../justificatifs/justificatif';
 import { vueClient } from './demande';
 import {
   ModifierDemandeDto,
@@ -155,16 +159,6 @@ export class DemandesClientController {
     @Param('id', ParseUUIDPipe) id: string,
     @Res() res: Response,
   ): Promise<void> {
-    const { chemin, typeMime, nomAffiche } = await this.demandes.lireJustificatif(
-      client,
-      id,
-      new Date(),
-    );
-    // attachment() encode le nom d'origine dans Content-Disposition. Le type est fixé APRÈS :
-    // il vient du type détecté à l'envoi, jamais de l'extension choisie par le client.
-    res.attachment(nomAffiche);
-    res.setHeader('Content-Type', typeMime);
-    res.setHeader('Cache-Control', 'no-store');
-    res.sendFile(chemin);
+    envoyerJustificatif(res, await this.demandes.lireJustificatif(client, id, new Date()));
   }
 }

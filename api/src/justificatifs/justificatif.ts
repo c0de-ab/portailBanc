@@ -1,4 +1,7 @@
 import { join, resolve } from 'node:path';
+import { HttpStatus } from '@nestjs/common';
+import type { Response } from 'express';
+import { ErreurApi } from '../http/erreur-api';
 
 // Le justificatif fictif (CLAUDE.md, section Sécurité) : 2 Mo maximum, PDF, JPEG ou PNG.
 // Seule sa présence est contrôlée (R4) ; il n'est jamais transmis au modèle IA.
@@ -75,4 +78,34 @@ export function cheminDe(nomStocke: string): string {
 
 export function typeDe(nomStocke: string): TypeJustificatif {
   return nomStocke.slice(nomStocke.lastIndexOf('.') + 1) as TypeJustificatif;
+}
+
+export type JustificatifATelecharger = { chemin: string; typeMime: string; nomAffiche: string };
+
+// Ce qu'il faut pour envoyer le justificatif d'une demande déjà chargée AVEC son filtre de
+// périmètre. Sans justificatif : 404 INTROUVABLE.
+export function justificatifATelecharger(
+  nomStocke: string | null,
+  nomAffiche: string | null,
+): JustificatifATelecharger {
+  if (!nomStocke) {
+    throw new ErreurApi(HttpStatus.NOT_FOUND, [
+      { code: 'INTROUVABLE', message: 'Aucun justificatif pour cette demande.' },
+    ]);
+  }
+  return {
+    chemin: cheminDe(nomStocke),
+    typeMime: TYPE_MIME[typeDe(nomStocke)],
+    nomAffiche: nomAffiche ?? 'justificatif',
+  };
+}
+
+// Envoie le fichier : toujours en pièce jointe, jamais affiché dans la page, jamais en cache.
+export function envoyerJustificatif(res: Response, justificatif: JustificatifATelecharger): void {
+  // attachment() encode le nom d'origine dans Content-Disposition. Le type est fixé APRÈS :
+  // il vient du type détecté à l'envoi, jamais de l'extension choisie par le client.
+  res.attachment(justificatif.nomAffiche);
+  res.setHeader('Content-Type', justificatif.typeMime);
+  res.setHeader('Cache-Control', 'no-store');
+  res.sendFile(justificatif.chemin);
 }

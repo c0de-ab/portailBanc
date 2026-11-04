@@ -125,3 +125,22 @@ export const LIBELLE_DECISION: Record<string, string> = {
   APPROBATION: 'Approuvée',
   REJET: 'Rejetée',
 };
+
+// Le chat de l'agent (POST /api/agent/messages). Trois natures de message, à ne jamais confondre :
+// la donnée du système (résultat d'un outil), l'explication du modèle (texte non fiable) et
+// l'action réalisée. La carte de confirmation est la seule voie vers la soumission (R7).
+export type CarteConfirmation = {
+  demandeId: string;
+  // Transmise à la soumission, jamais affichée (H14).
+  version: number;
+  plafondDemande: number;
+  dureeJours: number;
+  motif: string;
+  justificatifNom: string | null;
+};
+
+export type ElementAgent =
+  | { type: 'donnee'; outil: string; contenu: unknown }
+  | { type: 'explication'; texte: string }
+  | { type: 'action'; texte: string; demandeId: string }
+  | { type: 'confirmation'; carte: CarteConfirmation };

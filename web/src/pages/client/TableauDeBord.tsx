@@ -31,6 +31,10 @@ export function TableauDeBord() {
   return (
     <>
       <h1>Mes plafonds de virement</h1>
+      <p className="chapeau">
+        Une question, ou besoin d’aide pour préparer une demande ?{' '}
+        <Link to="/client/assistant">Demander à l’assistant</Link>
+      </p>
       {comptes.map((compte) => (
         <section key={compte.id} className="compte">
           <h2>Compte {compte.numero}</h2>

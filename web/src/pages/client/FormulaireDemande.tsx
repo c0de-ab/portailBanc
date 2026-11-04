@@ -232,8 +232,9 @@ export function FormulaireDemande() {
 
   return (
     <>
-      <p>
+      <p className="fil">
         <Link to="/client">Mes plafonds</Link>
+        <Link to="/client/assistant">Préparer avec l’assistant</Link>
       </p>
       <h1>
         {complement

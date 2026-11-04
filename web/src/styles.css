@@ -409,3 +409,141 @@ input[inputmode='numeric'] {
     transition: none;
   }
 }
+
+/* Assistant : chaque nature de message a son apparence, pour ne jamais les confondre */
+
+.fil {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+}
+
+.conversation {
+  list-style: none;
+  padding: 0;
+  margin: 1.5rem 0;
+  display: grid;
+  gap: 1rem;
+}
+
+.echange {
+  display: grid;
+  gap: 0.625rem;
+}
+
+.bulle-client {
+  justify-self: end;
+  max-width: 85%;
+  margin: 0;
+  padding: 0.625rem 0.875rem;
+  background: var(--info-fond);
+  border-radius: 12px 12px 2px 12px;
+}
+
+.nature {
+  margin: 0 0 0.25rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--encre-douce);
+}
+
+.donnee,
+.action-realisee,
+.explication,
+.carte-confirmation {
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+}
+
+.donnee p,
+.action-realisee p,
+.explication p {
+  margin: 0 0 0.25rem;
+}
+
+.donnee ul {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+/* Donnée du système : cadre net, chiffres alignés */
+.donnee {
+  background: var(--surface);
+  border: 1px solid var(--ligne);
+  font-variant-numeric: tabular-nums;
+}
+
+.donnee pre {
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+/* Explication du modèle : cadre en pointillé, pour signaler un texte à vérifier */
+.explication {
+  border: 1px dashed #9aa9a6;
+}
+
+/* Action réalisée : ce que le serveur a vraiment fait */
+.action-realisee {
+  background: #e6f2ec;
+  border: 1px solid #b7d8c8;
+}
+
+.action-realisee .nature {
+  color: var(--actif);
+}
+
+/* Carte de confirmation : la seule voie vers la soumission */
+.carte-confirmation {
+  background: var(--surface);
+  border: 2px solid var(--action);
+}
+
+.carte-confirmation .nature {
+  color: var(--action);
+}
+
+.carte-confirmation .recapitulatif {
+  margin: 0.5rem 0 1rem;
+}
+
+.exemples {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.exemples p {
+  margin: 0;
+  width: 100%;
+}
+
+.exemple {
+  font: inherit;
+  font-size: 0.9375rem;
+  padding: 0.375rem 0.75rem;
+  border: 1px solid var(--ligne);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--encre);
+  cursor: pointer;
+  text-align: left;
+}
+
+.exemple:hover {
+  border-color: var(--action);
+}
+
+.saisie-message {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.375rem 0.75rem;
+  align-items: end;
+}
+
+.saisie-message label {
+  grid-column: 1 / -1;
+  font-weight: 600;
+}

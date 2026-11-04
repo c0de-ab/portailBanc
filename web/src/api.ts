@@ -1,4 +1,11 @@
-import type { Compte, Demande, DetailDemande, ErreurDetaillee, Utilisateur } from './types';
+import type {
+  Compte,
+  Demande,
+  DetailDemande,
+  ElementAgent,
+  ErreurDetaillee,
+  Utilisateur,
+} from './types';
 
 // Tous les appels à l'API passent par ici. URL relatives : même origine en production,
 // redirection par Vite en développement. Le cookie de session suit tout seul (même origine).
@@ -85,4 +92,9 @@ export const api = {
   abandonner: (d: Demande) =>
     appeler<{ demande: Demande }>('POST', `/demandes/${d.id}/abandonner`, { version: d.version }),
   lienJustificatif: (id: string) => `/api/demandes/${id}/justificatif`,
+
+  // L'agent : le message du client est une donnée, l'agent ne soumet jamais. 503 si le modèle
+  // est indisponible (IA_INDISPONIBLE) : les formulaires restent utilisables.
+  envoyerMessage: (message: string) =>
+    appeler<{ elements: ElementAgent[] }>('POST', '/agent/messages', { message }),
 };

@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { BrowserRouter, Link, Navigate, Route, Routes } from 'react-router';
 import { Connexion } from './pages/Connexion';
+import { Assistant } from './pages/client/Assistant';
 import { DetailDemande } from './pages/client/DetailDemande';
 import { FormulaireDemande } from './pages/client/FormulaireDemande';
 import { TableauDeBord } from './pages/client/TableauDeBord';
@@ -19,6 +20,14 @@ export function App() {
             element={
               <Protege role="CLIENT">
                 <TableauDeBord />
+              </Protege>
+            }
+          />
+          <Route
+            path="/client/assistant"
+            element={
+              <Protege role="CLIENT">
+                <Assistant />
               </Protege>
             }
           />

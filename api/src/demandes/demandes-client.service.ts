@@ -571,7 +571,7 @@ export class DemandesClientService {
   }
 
   // H23 : les mêmes règles que la soumission, en avertissements.
-  private async avertissements(demande: Demande): Promise<ErreurRegle[]> {
+  async avertissements(demande: Demande): Promise<ErreurRegle[]> {
     return verifierRegles(contenuDe(demande), await this.contexte(demande.accountId));
   }
 

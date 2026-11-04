@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import type { PoolClient } from 'pg';
 import { BaseService } from '../base/base.service';
+import { estPourLAgent } from './contexte-agent';
 
 // Un événement de l'historique (table events) : acteur, action, date, référence, version, motif.
 // Jamais de secret ni de conversation complète dans `details`.
@@ -32,7 +33,8 @@ export class HistoriqueService {
       evenement.requestId ?? null,
       evenement.reference ?? null,
       evenement.acteurId,
-      evenement.viaAgent ?? false,
+      // Sans précision, l'événement est « via l'agent » s'il est écrit pendant un appel d'outil.
+      evenement.viaAgent ?? estPourLAgent(),
       evenement.action,
       evenement.requestVersion ?? null,
       evenement.motif ?? null,

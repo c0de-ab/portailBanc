@@ -98,6 +98,7 @@ Dans l'image Docker de production, les outils de développement (`ts-node`, `tsx
    - **409** : conflit d'état ou de version (R6, R7, R11, R12, R13, et transition impossible, code `TRANSITION`) ;
    - **403** : l'acteur n'a pas le droit (R8, R9, et rôle refusé par le guard, code `ROLE`) ;
    - **404** : dossier hors périmètre (R14). Un dossier inexistant reçoit la même réponse (règle 4). Une route ou une ressource qui n'est pas un dossier : code `INTROUVABLE` ;
+   - **503** : modèle IA indisponible (erreur, délai de 15 s dépassé), code `IA_INDISPONIBLE` : le chat l'indique, les formulaires restent utilisables ;
    - **500** : erreur inattendue, code `ERREUR_INTERNE`, sans aucun détail technique dans la réponse (le détail va dans le journal).
 
    Un filtre d'exceptions global (`src/http/filtre-erreurs.ts`) garantit ce format pour toutes les erreurs ; les services et les controllers lèvent `ErreurApi(statut, erreurs)`.

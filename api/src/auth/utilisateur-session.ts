@@ -1,3 +1,5 @@
+import type { MessageModele } from '../agent/llm-client';
+
 // Ce que la session retient de l'utilisateur connecté : une copie prise à la connexion,
 // sans relecture de la base à chaque requête. Un changement de rôle ne prend donc effet
 // qu'à la connexion suivante (limite connue). Le statut du dossier client (R5) n'est
@@ -18,5 +20,7 @@ export type UtilisateurSession = {
 declare module 'express-session' {
   interface SessionData {
     utilisateur?: UtilisateurSession;
+    // La mémoire de l'agent : les derniers échanges, jamais enregistrés ailleurs.
+    conversation?: MessageModele[];
   }
 }

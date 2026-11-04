@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { Type } from '@nestjs/common';
-import { Test } from '@nestjs/testing';
+import { Test, type TestingModuleBuilder } from '@nestjs/testing';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
@@ -12,10 +12,16 @@ import type { ErreurDetaillee } from '../src/http/erreur-api';
 
 // L'application complète pour un test d'API, configurée comme en production (configurerApp),
 // avec un faux frontend construit. `modules` ajoute des modules propres au test.
-export async function demarrerAppTest(modules: Type[] = []) {
+// `surcharger` remplace un provider pour le test (par exemple un modèle qui échoue).
+export async function demarrerAppTest(
+  modules: Type[] = [],
+  surcharger: (constructeur: TestingModuleBuilder) => TestingModuleBuilder = (c) => c,
+) {
   const dossierWeb = mkdtempSync(join(tmpdir(), 'portail-web-'));
   writeFileSync(join(dossierWeb, 'index.html'), '<!doctype html><title>Portail</title>');
-  const moduleRef = await Test.createTestingModule({ imports: [AppModule, ...modules] }).compile();
+  const moduleRef = await surcharger(
+    Test.createTestingModule({ imports: [AppModule, ...modules] }),
+  ).compile();
   const app = moduleRef.createNestApplication<NestExpressApplication>({ logger: false });
   configurerApp(app, dossierWeb);
   // Écoute sur un port libre (et non simple init) : supertest réutilise ce serveur, même quand

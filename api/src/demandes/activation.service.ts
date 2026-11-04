@@ -1,14 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { avecDelai, decrireEchec } from '../banque/appel-banque';
 import { BanqueService, ErreurBanque, type ResultatBancaire } from '../banque/banque.service';
 import { BaseService } from '../base/base.service';
 import { calculerEcheance } from '../domain/dates';
 import { etatApres } from '../domain/transitions';
 import { HistoriqueService } from '../historique/historique.service';
 import { COLONNES_DEMANDE, type Demande, type LigneDemande, versDemande } from './demande';
-import type { StatutExecution } from './demande';
-
-// Délai maximal d'un appel à la banque (CLAUDE.md, règle 7).
-const DELAI_BANQUE_MS = 3000;
 
 // L'activation d'une demande approuvée (docs/etats-transitions.md, § 3). Ce sont des
 // transitions DU SYSTÈME : conditionnées au seul statut APPROUVEE, sans version (règle 5).
@@ -137,29 +134,4 @@ export class ActivationService {
     );
     return versDemande(rows[0]);
   }
-}
-
-// L'appel à la banque, borné à 3 s : au-delà, le résultat est inconnu (comme une réponse perdue).
-async function avecDelai<T>(appel: Promise<T>): Promise<T> {
-  let minuteur: NodeJS.Timeout | undefined;
-  const delai = new Promise<never>((_resoudre, rejeter) => {
-    minuteur = setTimeout(
-      () => rejeter(new ErreurBanque('DELAI', 'Délai dépassé : la banque n’a pas répondu en 3 s.')),
-      DELAI_BANQUE_MS,
-    );
-  });
-  try {
-    return await Promise.race([appel, delai]);
-  } finally {
-    clearTimeout(minuteur);
-  }
-}
-
-// ECHEC : la banque a refusé, rien n'est appliqué. Sinon (délai, erreur inattendue) : on ne sait
-// pas ce qui s'est passé côté banque, le résultat est INCONNU et la reprise le retrouvera.
-function decrireEchec(erreur: unknown): { statut: StatutExecution; message: string } {
-  if (erreur instanceof ErreurBanque) {
-    return { statut: erreur.nature === 'ECHEC' ? 'ECHEC' : 'INCONNU', message: erreur.message };
-  }
-  return { statut: 'INCONNU', message: 'Erreur inattendue lors de l’appel à la banque.' };
 }

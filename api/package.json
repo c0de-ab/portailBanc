@@ -14,7 +14,8 @@
     "format": "prettier --write .",
     "test": "jest --runInBand",
     "migrate": "node dist/commands/migrer.js",
-    "seed": "node dist/commands/seed.js"
+    "seed": "node dist/commands/seed.js",
+    "expire": "node dist/commands/expirer.js"
   },
   "dependencies": {
     "@nestjs/common": "^11.2.8",

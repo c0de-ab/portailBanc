@@ -52,7 +52,7 @@ docs/
 Depuis la racine :
 - `docker compose up` : lance la base et l'application, IA en mode simulé, mode démonstration activé (`DEMO_MODE=true`). Au démarrage, le conteneur applique les migrations puis crée les comptes de démonstration (`seed`), avant de lancer l'API
 - `docker compose up -d db` : lance seulement PostgreSQL, nécessaire au développement et aux tests d'API. Au premier lancement du conteneur, un script d'initialisation (`docker-entrypoint-initdb.d`) crée aussi la base de test
-- `docker compose exec app npm run expire -- --date <date>` : expiration dans le conteneur
+- `docker compose exec app npm run expire -- --date <date>` : expiration dans le conteneur. La commande tourne dans un processus séparé de l'API : sa banque simulée suit `BANK_MODE`, et non le mode changé par la route de démonstration. Pour montrer une désactivation en échec : `docker compose exec -e BANK_MODE=ECHEC app npm run expire -- --date <date>`
 
 Dans `api/` :
 - Avant le premier lancement : copier `.env.example` (racine) en `api/.env`, qui n'est pas versionné
@@ -61,7 +61,7 @@ Dans `api/` :
 - `npm run lint` : ESLint et Prettier ; `npm run format` corrige la mise en forme
 - `npm run build` puis `npm run migrate` : applique les fichiers de `api/migrations/` qui ne figurent pas encore dans la table `schema_migrations`. Le script exécute le code compilé, comme dans le conteneur et dans la CI
 - `npm run build` puis `npm run seed` : crée les comptes de démonstration (`docs/modele-donnees.md`, § 7), **seulement si `DEMO_MODE=true`** ; sinon, il ne fait rien. Idempotent : un second lancement ne crée rien. Le mot de passe commun des comptes de démonstration est `MOT_DE_PASSE_DEMO` (`src/demo/comptes-demo.ts`), documenté dans le README
-- `npm run build` puis `npm run expire -- --date <date>` : expire les plafonds dont l'échéance est passée à cette date. Le script exécute uniquement le code compilé (`node dist/...`) et ne le compile jamais lui-même, pour fonctionner à l'identique dans le conteneur ; en local, lancer `npm run build` avant. Une date antérieure à l'heure réelle est refusée (H22)
+- `npm run build` puis `npm run expire -- --date <date>` : expire les plafonds dont l'échéance est passée à cette date. Le script exécute uniquement le code compilé (`node dist/...`) et ne le compile jamais lui-même, pour fonctionner à l'identique dans le conteneur ; en local, lancer `npm run build` avant. Une date seule (`2026-11-08`) désigne la fin de cette journée en UTC ; une date avec heure doit porter son fuseau (`2026-11-08T09:00:00Z`). Une date antérieure à l'heure réelle est refusée (H22). Les désactivations échouées sont reprises au passage suivant ; le code de sortie ne vaut 1 qu'en cas d'erreur de la commande elle-même
 
 Dans `web/` :
 - `npm run dev` : frontend en développement sur le port 5173 (Vite redirige `/api` vers le backend)

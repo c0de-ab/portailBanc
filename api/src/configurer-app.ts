@@ -2,6 +2,8 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import type { NextFunction, Request, Response } from 'express';
 import type { NestExpressApplication } from '@nestjs/platform-express';
+import { creerMiddlewareSession } from './auth/session';
+import { BaseService } from './base/base.service';
 import { enTetesSecurite } from './http/en-tetes-securite';
 import { FiltreErreurs } from './http/filtre-erreurs';
 import { creerValidationPipe } from './http/validation';
@@ -12,6 +14,8 @@ export function configurerApp(app: NestExpressApplication, dossierWeb: string): 
   app.setGlobalPrefix('api');
   // En premier : les en-têtes s'appliquent à toutes les réponses, frontend compris.
   app.use(enTetesSecurite);
+  // Sessions serveur, seulement pour l'API : les fichiers du frontend n'en ont pas besoin.
+  app.use('/api', creerMiddlewareSession(app.get(BaseService).poolPourSessions()));
   // Toutes les erreurs au format { erreurs: [...] } (règle 8).
   app.useGlobalFilters(new FiltreErreurs());
   // Toutes les entrées validées ; un champ non déclaré est refusé.

@@ -1,5 +1,5 @@
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
-import type { PoolClient, QueryResult, QueryResultRow } from 'pg';
+import type { Pool, PoolClient, QueryResult, QueryResultRow } from 'pg';
 import { creerPool } from './pool';
 import { executerTransaction } from './transaction';
 
@@ -19,6 +19,12 @@ export class BaseService implements OnModuleDestroy {
 
   transaction<T>(travail: (tx: PoolClient) => Promise<T>): Promise<T> {
     return executerTransaction(this.pool, travail);
+  }
+
+  // Le pool lui-même, uniquement pour le stockage des sessions (connect-pg-simple),
+  // qui gère ses propres requêtes. Le code de l'application passe par requete et transaction.
+  poolPourSessions(): Pool {
+    return this.pool;
   }
 
   async onModuleDestroy(): Promise<void> {

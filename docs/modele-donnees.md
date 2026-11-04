@@ -334,7 +334,9 @@ Les conversations ne sont pas enregistrées dans les tables métier. Les dernier
 | `superviseur.rachid` | Superviseur | **Équipe B** | Seul superviseur à voir et traiter le dossier d'Inès |
 | `mixte.leila` | Conseiller **et** superviseur | Portefeuille : Hamid ; équipe A | R9 : ne peut pas valider ce qu'elle a recommandé |
 
-Le jeu de données est créé **par les services métier**, et non par des insertions directes : la demande d'Inès suit le vrai parcours (brouillon, confirmation, soumission, recommandation), comme celle de Mehdi (brouillon, confirmation, soumission). Son historique est donc identique à celui d'une demande créée dans l'application.
+Le jeu de données est créé par `npm run seed`, **seulement si `DEMO_MODE=true`** ; le conteneur le lance à chaque démarrage, et il est idempotent. Il crée d'abord les identités : les équipes A et B, les 12 utilisateurs, les dossiers clients, les comptes et leur plafond côté banque (`bank_limits`, 10 000 DH). Tous les comptes ont le même mot de passe fictif, documenté dans le README.
+
+Les demandes sont créées **par les services métier**, et non par des insertions directes : la demande d'Inès suit le vrai parcours (brouillon, confirmation, soumission, recommandation), comme celle de Mehdi (brouillon, confirmation, soumission). Son historique est donc identique à celui d'une demande créée dans l'application.
 
 Toutes les identités, tous les comptes et tous les mots de passe sont fictifs. Les identifiants de connexion sont documentés dans le README.
 
@@ -346,7 +348,7 @@ Toutes les identités, tous les comptes et tous les mots de passe sont fictifs. 
 - Un **pool de connexions**, créé dans un service NestJS et fermé à l'arrêt de l'application.
 - Une **fonction de transaction** : elle prend une connexion du pool, exécute `BEGIN`, appelle le code fourni avec cette connexion (`tx`), puis `COMMIT` ; en cas d'erreur, `ROLLBACK`, et l'erreur est relancée. La connexion est toujours rendue au pool. Toutes les requêtes d'une transaction passent par `tx`, jamais par le pool.
 - **Requêtes toujours paramétrées** (`$1`, `$2`…). Aucune requête n'est construite en concaténant du texte ; les noms de tables et de colonnes sont écrits en dur.
-- **Une interface TypeScript par table** (par exemple `Demande` pour `requests`). Les fonctions d'accès convertissent chaque ligne (`plafond_demande`) vers l'interface (`plafondDemande`) : le reste du code ne manipule jamais une ligne brute. `pg` renvoie un `bigint` sous forme de texte : `events.id` est converti explicitement.
+- **Une interface TypeScript par table** (par exemple `Demande` pour `requests`). Les fonctions d'accès convertissent chaque ligne (`plafond_demande`) vers l'interface (`plafondDemande`) : le reste du code ne manipule jamais une ligne brute. `pg` renvoie un `bigint` sous forme de texte : `events.id` est converti explicitement. `pg` ne sait pas non plus lire un tableau d'enum : `users.roles` (`role[]`) est toujours lu avec `roles::text[]`, sinon il arriverait sous forme de texte (`"{CLIENT}"`), et un test sur ce texte réussirait par simple recherche de sous-chaîne.
 - Une violation d'unicité est reconnue par le code d'erreur PostgreSQL **`23505`** et le nom de la contrainte (`uq_demande_en_cours`, `uq_brouillon_unique`…).
 
 **Migrations.** Des fichiers SQL numérotés dans `api/migrations/` : `001_modele_initial.sql`, `002_….sql`… Un fichier appliqué n'est jamais modifié : toute évolution passe par un nouveau fichier.

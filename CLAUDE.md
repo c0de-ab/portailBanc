@@ -50,7 +50,7 @@ docs/
 À mettre à jour si les scripts changent.
 
 Depuis la racine :
-- `docker compose up` : lance la base et l'application, IA en mode simulé, mode démonstration activé (`DEMO_MODE=true`)
+- `docker compose up` : lance la base et l'application, IA en mode simulé, mode démonstration activé (`DEMO_MODE=true`). Au démarrage, le conteneur applique les migrations puis crée les comptes de démonstration (`seed`), avant de lancer l'API
 - `docker compose up -d db` : lance seulement PostgreSQL, nécessaire au développement et aux tests d'API. Au premier lancement du conteneur, un script d'initialisation (`docker-entrypoint-initdb.d`) crée aussi la base de test
 - `docker compose exec app npm run expire -- --date <date>` : expiration dans le conteneur
 
@@ -60,6 +60,7 @@ Dans `api/` :
 - `npm run test` : tests unitaires et tests d'API. **PostgreSQL doit tourner** ; les tests utilisent une base séparée, définie dans `api/.env.test`, à laquelle Jest applique d'abord les migrations (`globalSetup`)
 - `npm run lint` : ESLint et Prettier ; `npm run format` corrige la mise en forme
 - `npm run build` puis `npm run migrate` : applique les fichiers de `api/migrations/` qui ne figurent pas encore dans la table `schema_migrations`. Le script exécute le code compilé, comme dans le conteneur et dans la CI
+- `npm run build` puis `npm run seed` : crée les comptes de démonstration (`docs/modele-donnees.md`, § 7), **seulement si `DEMO_MODE=true`** ; sinon, il ne fait rien. Idempotent : un second lancement ne crée rien. Le mot de passe commun des comptes de démonstration est `MOT_DE_PASSE_DEMO` (`src/demo/comptes-demo.ts`), documenté dans le README
 - `npm run build` puis `npm run expire -- --date <date>` : expire les plafonds dont l'échéance est passée à cette date. Le script exécute uniquement le code compilé (`node dist/...`) et ne le compile jamais lui-même, pour fonctionner à l'identique dans le conteneur ; en local, lancer `npm run build` avant. Une date antérieure à l'heure réelle est refusée (H22)
 
 Dans `web/` :
@@ -124,7 +125,8 @@ Dans l'image Docker de production, les outils de développement (`ts-node`, `tsx
 ## Sécurité
 
 - Aucun secret dans le code ni dans Git. Deux fichiers d'environnement seulement sont versionnés : `.env.example`, et `api/.env.test`, utilisé par les tests et la CI, qui ne contient que des valeurs de test (adresse de la base de test locale, secret de session factice). Le `.gitignore` ignore tous les autres `.env*`.
-- Mots de passe hachés en Argon2id. Cookie de session `httpOnly`, `SameSite=Strict`, `Secure` en production.
+- Mots de passe hachés en Argon2id. Cookie de session `httpOnly`, `SameSite=Strict`, et `Secure` **seulement si `COOKIE_SECURE=true`**, c'est-à-dire derrière HTTPS. L'attribut ne dépend pas du mode production : avec `Secure`, express-session n'envoie pas le cookie en HTTP, et la connexion ne fonctionnerait pas avec `docker compose up` sur http://localhost:3000. `COOKIE_SECURE=false` dans Docker Compose et dans les tests (voir `.env.example`). L'API refuse de démarrer sans `SESSION_SECRET`.
+- La session contient une **copie de l'utilisateur prise à la connexion** (identifiant, nom, rôles, équipe, dossier client), sans relecture de la base à chaque requête : un changement de rôle ne prend effet qu'à la connexion suivante (limite connue). Le **statut du dossier client (R5) n'est jamais lu dans la session** : il est toujours relu en base au moment de la soumission.
 - Session **régénérée à la connexion** (`req.session.regenerate`), détruite à la déconnexion, expirée après 30 minutes d'**inactivité** : `cookie.maxAge` de 30 minutes **et** `rolling: true`, qui repousse l'échéance à chaque requête (`maxAge` seul expirerait 30 minutes après la connexion).
 - Le message d'erreur de connexion est le même pour un e-mail inconnu et un mauvais mot de passe, et **le temps de réponse aussi** : si l'e-mail est inconnu, le mot de passe est quand même vérifié contre un hachage Argon2id factice, calculé au démarrage.
 - En-têtes de sécurité ajoutés par un petit middleware dans `main.ts`, sans dépendance : `X-Content-Type-Options: nosniff`, `Content-Security-Policy: frame-ancestors 'none'` (interdit l'affichage dans un cadre) et `Referrer-Policy: same-origin`.

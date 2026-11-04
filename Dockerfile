@@ -32,5 +32,6 @@ COPY api/migrations ./migrations
 COPY --from=build-web /app/web/dist /app/web/dist
 USER node
 EXPOSE 3000
-# Les migrations sont appliquées au démarrage, puis l'API compilée est lancée.
-CMD ["sh", "-c", "node dist/commands/migrer.js && node dist/main.js"]
+# Au démarrage : migrations, comptes de démonstration (seulement si DEMO_MODE=true ;
+# idempotent), puis l'API compilée.
+CMD ["sh", "-c", "node dist/commands/migrer.js && node dist/commands/seed.js && node dist/main.js"]

@@ -216,5 +216,6 @@ Le cahier des charges autorise à questionner une ambiguïté et à proposer une
 ## 8. Limites connues
 
 - **Réaffectation d'un dossier** : non couverte (H9).
+- **Changement de rôle** : la session garde une copie de l'utilisateur prise à la connexion ; un changement de rôle ne prend effet qu'à la connexion suivante. Le statut du dossier client (R5) n'est jamais lu dans la session : il est relu en base à chaque soumission.
 - **Demande bloquée en Approuvée** : si l'activation échoue à chaque reprise, la demande reste Approuvée sans autre issue. Le client ne peut plus l'annuler (R12) et le compte reste bloqué par R6. La résolution se fait hors de l'application. Ce cas est volontairement laissé de côté, comme le worker de reprise automatique.
 - **Numérotation des références** : une séquence PostgreSQL n'est pas annulée avec la transaction. Une soumission refusée peut donc laisser un trou dans la numérotation ; l'unicité n'est pas affectée.

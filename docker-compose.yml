@@ -24,7 +24,10 @@ services:
       PORT: 3000
       # Valeur de démonstration, sans valeur réelle : à remplacer hors démonstration.
       SESSION_SECRET: secret-de-demonstration-factice
+      # HTTP sur http://localhost:3000 : le cookie ne peut pas être Secure (voir .env.example).
+      COOKIE_SECURE: 'false'
       LLM_MODE: mock
+      # Comptes de démonstration créés au démarrage, routes /api/demo/... disponibles.
       DEMO_MODE: 'true'
     ports:
       - '3000:3000'

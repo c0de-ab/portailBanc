@@ -1,6 +1,6 @@
 // Le contrat entre l'agent et un modèle de langage (CLAUDE.md, section Agent IA). Trois
-// implémentations : connectée (SDK Anthropic, étape 7c), simulée et déterministe (par défaut),
-// et un modèle piégé réservé aux tests (api/test/). Le reste de l'agent ne connaît que ce contrat.
+// implémentations : connectée (API Groq), simulée et déterministe (par défaut), et un modèle
+// piégé réservé aux tests (api/test/). Le reste de l'agent ne connaît que ce contrat.
 
 // Une demande d'appel d'outil faite par le modèle. Les arguments sont des données NON FIABLES :
 // ils sont validés avant tout usage.

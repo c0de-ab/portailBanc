@@ -26,7 +26,11 @@ services:
       SESSION_SECRET: secret-de-demonstration-factice
       # HTTP sur http://localhost:3000 : le cookie ne peut pas être Secure (voir .env.example).
       COOKIE_SECURE: 'false'
-      LLM_MODE: mock
+      # Mode simulé par défaut. Pour le mode connecté : un fichier .env à la racine (ignoré par Git)
+      # avec LLM_MODE=connecte et GROQ_API_KEY=..., sans modifier ce fichier.
+      LLM_MODE: ${LLM_MODE:-mock}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      GROQ_MODEL: ${GROQ_MODEL:-llama-3.3-70b-versatile}
       # Comptes de démonstration créés au démarrage, routes /api/demo/... disponibles.
       DEMO_MODE: 'true'
     ports:

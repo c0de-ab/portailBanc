@@ -4,17 +4,27 @@ import { HistoriqueService } from '../historique/historique.service';
 import { AgentController } from './agent.controller';
 import { AgentService } from './agent.service';
 import { LLM_CLIENT, type LlmClient } from './llm-client';
+import { LlmGroq } from './llm-groq';
 import { LlmSimule } from './llm-simule';
 import { OutilsService } from './outils.service';
 
+const MODELE_GROQ_PAR_DEFAUT = 'llama-3.3-70b-versatile';
+
 // Le modèle est choisi par LLM_MODE : « mock » par défaut, partout (Docker, développement,
-// tests). Le mode connecté (SDK Anthropic) viendra à l'étape 7c.
-function creerModele(): LlmClient {
-  const mode = process.env.LLM_MODE ?? 'mock';
+// tests) ; « connecte » pour l'API Groq, avec une clé fournie par configuration.
+export function creerModele(env: NodeJS.ProcessEnv = process.env): LlmClient {
+  const mode = env.LLM_MODE ?? 'mock';
   if (mode === 'mock') {
     return new LlmSimule();
   }
-  throw new Error(`LLM_MODE inconnu : ${mode} (seul « mock » est disponible pour l'instant).`);
+  if (mode === 'connecte') {
+    // Sans clé, l'API refuse de démarrer : mieux qu'un chat qui échoue à chaque message.
+    if (!env.GROQ_API_KEY) {
+      throw new Error('LLM_MODE=connecte demande GROQ_API_KEY (voir .env.example).');
+    }
+    return new LlmGroq(env.GROQ_API_KEY, env.GROQ_MODEL ?? MODELE_GROQ_PAR_DEFAUT);
+  }
+  throw new Error(`LLM_MODE inconnu : ${mode} (attendu : mock ou connecte).`);
 }
 
 @Module({
@@ -24,7 +34,7 @@ function creerModele(): LlmClient {
     AgentService,
     OutilsService,
     HistoriqueService,
-    { provide: LLM_CLIENT, useFactory: creerModele },
+    { provide: LLM_CLIENT, useFactory: () => creerModele() },
   ],
 })
 export class AgentModule {}

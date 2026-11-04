@@ -19,7 +19,7 @@ Si le code et un document se contredisent, **s'arrêter et le signaler** : ne ja
 
 ## Stack
 
-TypeScript strict · Node.js 24 · NestJS (`api/`) · React + Vite (`web/`) · PostgreSQL 16 · SQL brut avec le pilote `pg` · migrations SQL numérotées · `class-validator` · Jest + Supertest · SDK Anthropic derrière l'interface `LlmClient` · Docker Compose · GitHub Actions.
+TypeScript strict · Node.js 24 · NestJS (`api/`) · React + Vite (`web/`) · PostgreSQL 16 · SQL brut avec le pilote `pg` · migrations SQL numérotées · `class-validator` · Jest + Supertest · API Groq (mode connecté, appelée par `fetch`) derrière l'interface `LlmClient` · Docker Compose · GitHub Actions.
 
 ## Structure cible
 
@@ -30,7 +30,7 @@ api/
     base/        pool pg, fonction de transaction, interfaces des tables
     demandes/    controllers et services des demandes et des décisions
     auth/        sessions, guards de rôles
-    agent/       LlmClient (connecté et simulé) et les quatre outils
+    agent/       LlmClient (connecté Groq et simulé) et les quatre outils
     banque/      banque simulée (bank_limits, bank_operations)
     commands/    migrations (npm run migrate), seed, commande d'expiration
   migrations/    fichiers SQL numérotés (001_modele_initial.sql…)
@@ -51,6 +51,7 @@ docs/
 
 Depuis la racine :
 - `docker compose up` : lance la base et l'application, IA en mode simulé, mode démonstration activé (`DEMO_MODE=true`). Au démarrage, le conteneur applique les migrations puis crée les comptes de démonstration (`seed`), avant de lancer l'API
+- Mode IA connecté (API Groq) : un fichier `.env` à la racine (ignoré par Git) avec `LLM_MODE=connecte` et `GROQ_API_KEY=...`, puis `docker compose up`. Sans clé, l'API refuse de démarrer. En local, les mêmes variables dans `api/.env`
 - `docker compose up -d db` : lance seulement PostgreSQL, nécessaire au développement et aux tests d'API. Au premier lancement du conteneur, un script d'initialisation (`docker-entrypoint-initdb.d`) crée aussi la base de test
 - `docker compose exec app npm run expire -- --date <date>` : expiration dans le conteneur. La commande tourne dans un processus séparé de l'API : sa banque simulée suit `BANK_MODE`, et non le mode changé par la route de démonstration. Pour montrer une désactivation en échec : `docker compose exec -e BANK_MODE=ECHEC app npm run expire -- --date <date>`
 

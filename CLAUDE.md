@@ -91,7 +91,7 @@ Dans l'image Docker de production, les outils de développement (`ts-node`, `tsx
 7. **Banque simulée :** clé fixe `act-<id>` ou `desact-<id>`. Les écritures de succès **et** d'échec sont conditionnées au statut `APPROUVEE` (activation) ou `ACTIVE` (désactivation). L'appel est synchrone, avec un délai de 3 s, et la réponse HTTP indique le résultat. Les modes `ECHEC` et `REPONSE_PERDUE` ne s'appliquent qu'aux nouvelles clés : une clé déjà connue renvoie toujours son résultat enregistré (H16). `date_activation` est la date d'application renvoyée par la banque dans `resultat` (H17).
 8. **Erreurs :** un format unique, `{ erreurs: [{ code, champ, message }] }`, où `code` est le code de la règle (par exemple `R4`). `champ` est facultatif : une erreur de version, par exemple, ne porte sur aucun champ. La soumission renvoie toutes les erreurs à la fois. Codes HTTP :
    - **422** : contenu invalide (R1 à R5, R10) ;
-   - **409** : conflit d'état ou de version (R6, R7, R11, R12, R13, transition impossible) ;
+   - **409** : conflit d'état ou de version (R6, R7, R11, R12, R13, et transition impossible, code `TRANSITION`) ;
    - **403** : l'acteur n'a pas le droit (R8, R9, rôle refusé par le guard) ;
    - **404** : dossier hors périmètre (R14). Un dossier inexistant reçoit la même réponse (règle 4).
 9. **Dates :** la date courante (`maintenant`) est passée en paramètre aux services. Pas de `new Date()` dans le domaine. La commande d'expiration reçoit **deux dates distinctes** : `dateSimulee`, la date passée à `--date`, qui sert uniquement à sélectionner les échéances ; et `maintenant`, l'heure réelle, qui date les événements. `events.created_at` est toujours l'heure réelle ; la date simulée est enregistrée dans `details` (H22).

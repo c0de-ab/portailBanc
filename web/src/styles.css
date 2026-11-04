@@ -1,0 +1,411 @@
+/* Portail bancaire : une seule colonne, sobre. L'état d'une demande se lit à la couleur de son
+   filet gauche ; la jauge du plafond est le seul élément graphique appuyé. */
+
+:root {
+  --fond: #f4f6f5;
+  --surface: #ffffff;
+  --encre: #17252a;
+  --encre-douce: #4d5d62;
+  --ligne: #d5dddb;
+  --action: #2b4bae;
+  --action-fonce: #1f3884;
+  --actif: #1f7a5a;
+  --avertissement: #8a5200;
+  --avertissement-fond: #fbf1e1;
+  --erreur: #a3232e;
+  --erreur-fond: #fbeaec;
+  --info-fond: #e9eefa;
+  --police: Seravek, 'Gill Sans Nova', Ubuntu, Calibri, 'DejaVu Sans', sans-serif;
+  color-scheme: light;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--fond);
+  color: var(--encre);
+  font-family: var(--police);
+  font-size: 1.0625rem;
+  line-height: 1.5;
+}
+
+h1 {
+  font-size: 1.875rem;
+  line-height: 1.2;
+  margin: 0.5rem 0 1.25rem;
+  font-weight: 600;
+}
+
+h2 {
+  font-size: 1.25rem;
+  margin: 2rem 0 0.75rem;
+  font-weight: 600;
+}
+
+a {
+  color: var(--action);
+}
+
+:focus-visible {
+  outline: 3px solid var(--action);
+  outline-offset: 2px;
+}
+
+/* Bandeau et page */
+
+.bandeau {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--ligne);
+}
+
+.marque {
+  font-weight: 700;
+  color: var(--encre);
+  text-decoration: none;
+  margin-right: auto;
+}
+
+.bandeau-utilisateur {
+  color: var(--encre-douce);
+}
+
+.page {
+  max-width: 72ch;
+  padding: 1.5rem 1rem 4rem;
+  margin: 0 auto 0 max(1rem, 8vw);
+}
+
+.page-connexion {
+  padding-top: 12vh;
+  max-width: 28rem;
+}
+
+.chapeau {
+  color: var(--encre-douce);
+  margin-top: -0.5rem;
+}
+
+.discret {
+  color: var(--encre-douce);
+  font-size: 0.9375rem;
+}
+
+.chiffres,
+.montant-principal {
+  font-variant-numeric: tabular-nums;
+}
+
+.texte-libre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* Formulaires et boutons */
+
+.formulaire {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.formulaire label {
+  display: grid;
+  gap: 0.375rem;
+  font-weight: 600;
+}
+
+input,
+select,
+textarea {
+  font: inherit;
+  font-weight: 400;
+  color: inherit;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid #9aa9a6;
+  border-radius: 6px;
+  background: var(--surface);
+  width: 100%;
+}
+
+input[inputmode='numeric'] {
+  font-size: 1.375rem;
+  font-variant-numeric: tabular-nums;
+  max-width: 14rem;
+}
+
+.bouton {
+  display: inline-block;
+  font: inherit;
+  font-weight: 600;
+  padding: 0.625rem 1.125rem;
+  border: none;
+  border-radius: 6px;
+  background: var(--action);
+  color: #fff;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.bouton:hover {
+  background: var(--action-fonce);
+}
+
+.bouton:disabled {
+  background: #8b96b8;
+  cursor: not-allowed;
+}
+
+.lien {
+  font: inherit;
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--action);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.lien-danger {
+  color: var(--erreur);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1.25rem;
+  margin-top: 1.5rem;
+}
+
+/* Messages */
+
+.message {
+  padding: 0.75rem 1rem;
+  border: 1px solid;
+  border-radius: 6px;
+  margin: 1rem 0;
+}
+
+.message ul {
+  margin: 0.25rem 0 0;
+  padding-left: 1.25rem;
+}
+
+.message p {
+  margin: 0;
+}
+
+.message-erreur {
+  border-color: var(--erreur);
+  background: var(--erreur-fond);
+}
+
+.message-avertissement {
+  border-color: var(--avertissement);
+  background: var(--avertissement-fond);
+}
+
+.message-info {
+  border-color: var(--action);
+  background: var(--info-fond);
+}
+
+/* État d'une demande : une pastille dont la couleur porte le sens, devant le libellé */
+
+.etat {
+  --ton: #9aa9a6;
+  position: relative;
+  padding-left: 1.25rem;
+  margin: 1rem 0;
+}
+
+.etat::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.45em;
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: 50%;
+  background: var(--ton);
+}
+
+.etat p {
+  margin: 0 0 0.5rem;
+}
+
+.etat-libelle {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.etat:has(.etat-libelle)::before {
+  top: 0.6em;
+}
+
+.etat-attente {
+  --ton: var(--action);
+}
+
+.etat-action {
+  --ton: var(--avertissement);
+}
+
+.etat-actif {
+  --ton: var(--actif);
+}
+
+.etat-refus {
+  --ton: var(--erreur);
+}
+
+/* Tableau de bord */
+
+.compte {
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--ligne);
+}
+
+.compte h2 {
+  margin-bottom: 0.25rem;
+  font-size: 1rem;
+  color: var(--encre-douce);
+}
+
+.montant-principal {
+  font-size: 2.25rem;
+  font-weight: 600;
+  margin: 0 0 1rem;
+}
+
+.montant-principal .discret {
+  font-weight: 400;
+}
+
+.liste-demandes {
+  list-style: none;
+  padding: 0;
+}
+
+.liste-demandes li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  margin: 0.5rem 0;
+}
+
+/* Récapitulatif et chronologie */
+
+.recapitulatif {
+  display: grid;
+  grid-template-columns: minmax(10rem, max-content) 1fr;
+  gap: 0.5rem 1.5rem;
+  margin: 1.5rem 0;
+}
+
+.recapitulatif dt {
+  color: var(--encre-douce);
+}
+
+.recapitulatif dd {
+  margin: 0;
+}
+
+.chronologie {
+  list-style: none;
+  padding: 0;
+  border-left: 2px solid var(--ligne);
+}
+
+.chronologie li {
+  padding: 0 0 1rem 1rem;
+}
+
+.chronologie p {
+  margin: 0 0 0.25rem;
+}
+
+/* La jauge du plafond : 0 à 100 000 DH, avec le plafond habituel et les deux seuils */
+
+.jauge {
+  margin-top: -0.5rem;
+}
+
+.jauge-piste {
+  position: relative;
+  height: 0.75rem;
+  background: #e3e9e7;
+  border-radius: 999px;
+  overflow: visible;
+}
+
+.jauge-remplissage {
+  height: 100%;
+  background: var(--action);
+  border-radius: 999px;
+  transition: width 200ms ease-out;
+}
+
+.jauge-remplissage.hors-bornes {
+  background: var(--erreur);
+}
+
+.jauge-repere {
+  position: absolute;
+  top: -0.25rem;
+  width: 2px;
+  height: 1.25rem;
+  background: var(--encre);
+  transform: translateX(-1px);
+}
+
+.repere-initial {
+  background: var(--actif);
+}
+
+.jauge-graduations {
+  position: relative;
+  height: 1.5rem;
+  font-size: 0.8125rem;
+  color: var(--encre-douce);
+  font-variant-numeric: tabular-nums;
+}
+
+.jauge-graduations span {
+  position: absolute;
+  top: 0.25rem;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.jauge-graduations span:last-child {
+  transform: translateX(-100%);
+}
+
+@media (max-width: 40rem) {
+  .page {
+    margin: 0 auto;
+  }
+
+  .recapitulatif {
+    grid-template-columns: 1fr;
+  }
+
+  .recapitulatif dd {
+    margin-bottom: 0.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .jauge-remplissage {
+    transition: none;
+  }
+}

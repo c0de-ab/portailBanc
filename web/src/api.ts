@@ -1,15 +1,88 @@
-// Appels à l'API. Les URL sont relatives : même origine en production,
-// redirection par Vite en développement.
+import type { Compte, Demande, DetailDemande, ErreurDetaillee, Utilisateur } from './types';
 
-// Recopié de api/src/health/health.service.ts (pas de package partagé).
-export type EtatSante = { statut: 'ok'; base: 'ok' } | { statut: 'degrade'; base: 'indisponible' };
+// Tous les appels à l'API passent par ici. URL relatives : même origine en production,
+// redirection par Vite en développement. Le cookie de session suit tout seul (même origine).
 
-// L'API renvoie le même format avec 200 (base joignable) et 503 (base indisponible).
-// Une autre réponse signifie que l'API elle-même ne répond pas correctement.
-export async function lireSante(): Promise<EtatSante> {
-  const reponse = await fetch('/api/health');
-  if (reponse.status !== 200 && reponse.status !== 503) {
-    throw new Error(`Réponse inattendue de l'API : ${reponse.status}`);
+// Une réponse en erreur, au format { erreurs } de l'API (CLAUDE.md, règle 8).
+export class ErreurApi extends Error {
+  constructor(
+    readonly statut: number,
+    readonly erreurs: ErreurDetaillee[],
+  ) {
+    super(erreurs.map((e) => e.message).join(' '));
   }
-  return (await reponse.json()) as EtatSante;
+
+  // Un conflit (R7, R11…) : la demande a changé, il faut la relire.
+  get estUnConflit(): boolean {
+    return this.statut === 409;
+  }
 }
+
+// Session expirée ou absente : l'application revient à la page de connexion.
+export const EVENEMENT_SESSION_EXPIREE = 'portail:session-expiree';
+
+async function appeler<T>(methode: string, chemin: string, corps?: unknown): Promise<T> {
+  const estFormulaire = corps instanceof FormData;
+  const reponse = await fetch(`/api${chemin}`, {
+    method: methode,
+    headers:
+      corps === undefined || estFormulaire ? undefined : { 'Content-Type': 'application/json' },
+    body: corps === undefined ? undefined : estFormulaire ? corps : JSON.stringify(corps),
+  });
+  if (reponse.status === 204) {
+    return undefined as T;
+  }
+  const contenu = (await reponse.json().catch(() => null)) as {
+    erreurs?: ErreurDetaillee[];
+  } | null;
+  if (!reponse.ok) {
+    if (reponse.status === 401 && chemin !== '/auth/connexion') {
+      window.dispatchEvent(new Event(EVENEMENT_SESSION_EXPIREE));
+    }
+    throw new ErreurApi(
+      reponse.status,
+      contenu?.erreurs ?? [{ code: 'INCONNUE', message: 'Le serveur ne répond pas correctement.' }],
+    );
+  }
+  return contenu as T;
+}
+
+export type AvecAvertissements = { demande: Demande; avertissements: ErreurDetaillee[] };
+
+export const api = {
+  // Authentification
+  connexion: (email: string, motDePasse: string) =>
+    appeler<{ utilisateur: Utilisateur }>('POST', '/auth/connexion', { email, motDePasse }),
+  deconnexion: () => appeler<void>('POST', '/auth/deconnexion'),
+  moi: () => appeler<{ utilisateur: Utilisateur }>('GET', '/auth/moi'),
+
+  // Parcours du client
+  comptes: () => appeler<{ comptes: Compte[] }>('GET', '/comptes'),
+  demandes: () => appeler<{ demandes: Demande[] }>('GET', '/demandes'),
+  demande: (id: string) => appeler<DetailDemande>('GET', `/demandes/${id}`),
+  obtenirBrouillon: (compteId: string) =>
+    appeler<AvecAvertissements>('POST', `/comptes/${compteId}/brouillon`),
+  modifier: (
+    d: Demande,
+    contenu: { plafondDemande?: number | null; dureeJours?: number | null; motif?: string | null },
+  ) =>
+    appeler<AvecAvertissements>('PATCH', `/demandes/${d.id}`, { version: d.version, ...contenu }),
+  deposerJustificatif: (d: Demande, fichier: File) => {
+    const formulaire = new FormData();
+    formulaire.append('version', String(d.version));
+    formulaire.append('fichier', fichier);
+    return appeler<AvecAvertissements>('PUT', `/demandes/${d.id}/justificatif`, formulaire);
+  },
+  // R7 : le client renvoie exactement ce qu'il a vu, avec la version (non affichée).
+  soumettre: (d: { id: string; version: number; plafondDemande: number; dureeJours: number }) =>
+    appeler<{ demande: Demande }>('POST', `/demandes/${d.id}/soumettre`, {
+      version: d.version,
+      plafondDemande: d.plafondDemande,
+      dureeJours: d.dureeJours,
+    }),
+  annuler: (d: Demande) =>
+    appeler<{ demande: Demande }>('POST', `/demandes/${d.id}/annuler`, { version: d.version }),
+  abandonner: (d: Demande) =>
+    appeler<{ demande: Demande }>('POST', `/demandes/${d.id}/abandonner`, { version: d.version }),
+  lienJustificatif: (id: string) => `/api/demandes/${id}/justificatif`,
+};

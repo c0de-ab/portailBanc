@@ -128,6 +128,19 @@ function Groupe({
   vide: string;
   dossiers: Dossier[];
 }) {
+  // Une file vide tient sur une ligne : son titre et le message, sans panneau.
+  if (dossiers.length === 0) {
+    return (
+      <section id={id} aria-labelledby={id + '-titre'}>
+        <div style={{ display: 'flex', alignItems: 'baseline', flexWrap: 'wrap', gap: '4px 16px' }}>
+          <h2 id={id + '-titre'} className="h2">
+            {titre}
+          </h2>
+          <span className="muted">{vide}</span>
+        </div>
+      </section>
+    );
+  }
   return (
     <section id={id} aria-labelledby={id + '-titre'}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 16, marginBottom: 16 }}>
@@ -138,60 +151,54 @@ function Groupe({
           {dossiers.length} dossier{dossiers.length > 1 ? 's' : ''}
         </span>
       </div>
-      {dossiers.length === 0 ? (
-        <div className="panel" style={{ padding: '24px 32px' }}>
-          <p className="muted">{vide}</p>
-        </div>
-      ) : (
-        <div className="panel tableau-boite">
-          <table className="tableau" style={{ tableLayout: 'fixed' }}>
-            <colgroup>
-              <col style={{ width: '22%' }} />
-              <col style={{ width: '14%' }} />
-              <col style={{ width: '12%' }} />
-              <col style={{ width: '32%' }} />
-              <col style={{ width: '20%' }} />
-            </colgroup>
-            <thead>
-              <tr>
-                <th scope="col">Référence</th>
-                <th scope="col" className="num">
-                  Plafond
-                </th>
-                <th scope="col">Durée</th>
-                <th scope="col">État</th>
-                <th scope="col">Soumise le</th>
-              </tr>
-            </thead>
-            <tbody>
-              {dossiers.map((d) => {
-                const libelle = libelleDossier(d);
-                return (
-                  <tr key={d.id}>
-                    <td>
-                      <Link className="ref-lien" to={`/banque/dossiers/${d.id}`}>
-                        {d.reference}
-                      </Link>
-                    </td>
-                    <td className="num">
-                      {d.plafondDemande === null ? '' : enDirhams(d.plafondDemande)}
-                    </td>
-                    <td>
-                      {d.dureeJours === null
-                        ? ''
-                        : `${d.dureeJours} jour${d.dureeJours > 1 ? 's' : ''}`}
-                    </td>
-                    <td>
-                      <Etat ton={libelle.ton}>{libelle.texte}</Etat>
-                    </td>
-                    <td>{d.submittedAt && dateBreve(d.submittedAt)}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <div className="panel tableau-boite">
+        <table className="tableau" style={{ tableLayout: 'fixed' }}>
+          <colgroup>
+            <col style={{ width: '22%' }} />
+            <col style={{ width: '14%' }} />
+            <col style={{ width: '12%' }} />
+            <col style={{ width: '32%' }} />
+            <col style={{ width: '20%' }} />
+          </colgroup>
+          <thead>
+            <tr>
+              <th scope="col">Référence</th>
+              <th scope="col" className="num">
+                Plafond
+              </th>
+              <th scope="col">Durée</th>
+              <th scope="col">État</th>
+              <th scope="col">Soumise le</th>
+            </tr>
+          </thead>
+          <tbody>
+            {dossiers.map((d) => {
+              const libelle = libelleDossier(d);
+              return (
+                <tr key={d.id}>
+                  <td>
+                    <Link className="ref-lien" to={`/banque/dossiers/${d.id}`}>
+                      {d.reference}
+                    </Link>
+                  </td>
+                  <td className="num">
+                    {d.plafondDemande === null ? '' : enDirhams(d.plafondDemande)}
+                  </td>
+                  <td>
+                    {d.dureeJours === null
+                      ? ''
+                      : `${d.dureeJours} jour${d.dureeJours > 1 ? 's' : ''}`}
+                  </td>
+                  <td>
+                    <Etat ton={libelle.ton}>{libelle.texte}</Etat>
+                  </td>
+                  <td>{d.submittedAt && dateBreve(d.submittedAt)}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </section>
   );
 }

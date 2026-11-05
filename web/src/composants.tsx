@@ -209,7 +209,7 @@ function etapesDe(d: Demande): EtapeVue[] | null {
       if (i === 3) {
         const info =
           d.statut === 'ACTIVE' && d.dateActivation
-            ? `Appliqué par la banque le ${dateBreve(d.dateActivation)}`
+            ? `Appliqué le ${dateBreve(d.dateActivation)}`
             : d.activationStatut === 'ECHEC' || d.activationStatut === 'INCONNU'
               ? 'Pas encore appliqué par la banque'
               : 'En cours auprès de la banque';

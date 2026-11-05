@@ -1,4 +1,4 @@
-/* Portail bancaire — feuille de style, reprise de la maquette Claude Design (portail.css),
+/* Portail bancaire — feuille de style, reprise de la maquette (portail.css),
    direction « Coffre immersif », matière et relief
    Palette : Papier #F4F2ED · Blanc #FFFFFF · Encre #16202A · Ardoise #5A6472 · Nuit #0F2438 (barre latérale #0B1B2B) · Cobalt #3B5FD9 (sur Nuit #93ABFF)
    États : vert #1E7A4C (plafond actif) · ambre #8F5300 / #C27A0E (action requise) · rouge #B42318 (refus)
@@ -703,6 +703,16 @@ textarea.saisie {
 .segment-opt {
   position: relative;
   display: block;
+}
+/* Le choix du mode de la banque : un fieldset prend par défaut la largeur de son contenu
+   (min-width: min-content) et déborderait du panneau latéral du dossier, trop étroit pour
+   les trois options côte à côte. Dans un panneau, les options sont donc empilées. */
+.mode-banque {
+  min-width: 0;
+}
+.panel .mode-banque .segment {
+  display: flex;
+  flex-direction: column;
 }
 .segment-opt input {
   position: absolute;
@@ -1464,17 +1474,33 @@ a.panel:focus-visible {
 .tableau tbody tr.is-hover {
   background: linear-gradient(90deg, rgba(59, 95, 217, 0.04), rgba(244, 242, 237, 0.6));
 }
+/* La référence est soulignée comme un lien, et son lien couvre toute la ligne (::after) :
+   un clic n'importe où sur la ligne ouvre le dossier, avec un seul lien pour le clavier. */
 .ref-lien {
   color: #16202a;
   font-weight: 500;
-  text-decoration: none;
+  text-decoration: underline;
+  text-decoration-color: #b8b2a6;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
   border-radius: 4px;
 }
 .ref-lien:hover,
-.is-hover .ref-lien {
-  text-decoration: underline;
-  text-underline-offset: 4px;
+.is-hover .ref-lien,
+.tableau tbody tr:hover .ref-lien {
   color: #16202a;
+  text-decoration-color: #16202a;
+}
+.tableau tbody tr {
+  position: relative;
+}
+.tableau .ref-lien::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
 }
 
 /* Historique */

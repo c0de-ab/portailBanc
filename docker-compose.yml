@@ -30,7 +30,7 @@ services:
       # avec LLM_MODE=connecte et GROQ_API_KEY=..., sans modifier ce fichier.
       LLM_MODE: ${LLM_MODE:-mock}
       GROQ_API_KEY: ${GROQ_API_KEY:-}
-      GROQ_MODEL: ${GROQ_MODEL:-llama-3.3-70b-versatile}
+      GROQ_MODEL: ${GROQ_MODEL:-openai/gpt-oss-120b}
       # Comptes de démonstration créés au démarrage, routes /api/demo/... disponibles.
       DEMO_MODE: 'true'
     ports:

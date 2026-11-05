@@ -8,7 +8,7 @@ import { LlmGroq } from './llm-groq';
 import { LlmSimule } from './llm-simule';
 import { OutilsService } from './outils.service';
 
-const MODELE_GROQ_PAR_DEFAUT = 'llama-3.3-70b-versatile';
+const MODELE_GROQ_PAR_DEFAUT = 'openai/gpt-oss-120b';
 
 // Le modèle est choisi par LLM_MODE : « mock » par défaut, partout (Docker, développement,
 // tests) ; « connecte » pour l'API Groq, avec une clé fournie par configuration.

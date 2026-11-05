@@ -25,7 +25,7 @@ describe('Agent IA en mode connecté (Groq, réseau simulé)', () => {
 
   beforeAll(async () => {
     pool = creerPoolTest();
-    const groq = new LlmGroq('gsk_cle-factice', 'llama-3.3-70b-versatile', fauxFetch);
+    const groq = new LlmGroq('gsk_cle-factice', 'openai/gpt-oss-120b', fauxFetch);
     appTest = await demarrerAppTest([], (c) => c.overrideProvider(LLM_CLIENT).useValue(groq));
   });
 

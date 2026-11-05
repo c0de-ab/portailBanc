@@ -48,7 +48,7 @@ describe('LlmGroq : la requête envoyée', () => {
       corps: { choices: [{ message: { content: 'Bonjour' } }] },
     });
 
-    await new LlmGroq(CLE, 'llama-3.3-70b-versatile', appel).repondre({
+    await new LlmGroq(CLE, 'openai/gpt-oss-120b', appel).repondre({
       consignes: 'Consignes',
       messages: HISTORIQUE,
       outils: DESCRIPTIONS_OUTILS,
@@ -58,7 +58,7 @@ describe('LlmGroq : la requête envoyée', () => {
     expect(requetes[0].init.headers).toMatchObject({ Authorization: `Bearer ${CLE}` });
     const corps = corpsEnvoye(requetes[0]);
     expect(corps).toMatchObject({
-      model: 'llama-3.3-70b-versatile',
+      model: 'openai/gpt-oss-120b',
       tool_choice: 'auto',
       max_completion_tokens: 1024,
     });

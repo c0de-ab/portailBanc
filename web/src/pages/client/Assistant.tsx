@@ -69,7 +69,7 @@ export function Assistant() {
   return (
     <>
       <div className="entete">
-        <div className="colonne" style={{ gap: 8 }}>
+        <div className="colonne ecart-8">
           <h1 className="h1">Assistant</h1>
           <p className="muted">
             L’assistant consulte vos comptes et prépare un brouillon. Il ne soumet jamais rien :
@@ -79,12 +79,8 @@ export function Assistant() {
       </div>
 
       <div className="g12">
-        <section
-          className="panel"
-          style={{ gridColumn: 'span 8', display: 'flex', flexDirection: 'column' }}
-          aria-label="Conversation avec l’assistant"
-        >
-          <ol className="fil-messages" style={{ padding: '32px 40px' }} aria-live="polite">
+        <section className="panel conversation span-8" aria-label="Conversation avec l’assistant">
+          <ol className="fil-messages interieur-large" aria-live="polite">
             {echanges.length === 0 && (
               <li className="muted">Posez votre question, ou choisissez une suggestion.</li>
             )}
@@ -97,25 +93,10 @@ export function Assistant() {
                   </div>
                 )}
                 {echange.de === 'indisponible' && (
-                  <div
-                    className="bandeau-neutre"
-                    role="status"
-                    style={{
-                      padding: '24px 32px',
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      gap: 24,
-                      flexWrap: 'wrap',
-                    }}
-                  >
-                    <div
-                      style={{ display: 'flex', alignItems: 'flex-start', gap: 12, maxWidth: 440 }}
-                    >
-                      <span className="point point-neutre" style={{ marginTop: 8 }} />
-                      <p className="t17" style={{ fontWeight: 500 }}>
-                        {echange.texte}
-                      </p>
+                  <div className="bandeau-neutre barre-actions bandeau-indisponible" role="status">
+                    <div className="indisponible-texte">
+                      <span className="point point-neutre marge-haut-8" />
+                      <p className="t17 poids-500">{echange.texte}</p>
                     </div>
                     <Link className="btn btn-primaire" to="/client">
                       Revenir à mes plafonds
@@ -129,10 +110,7 @@ export function Assistant() {
             {envoi && <li className="muted">L’assistant répond…</li>}
           </ol>
 
-          <div
-            className="colonne"
-            style={{ borderTop: '1px solid #E9E6DF', padding: '24px 40px 32px', gap: 16 }}
-          >
+          <div className="colonne zone-saisie">
             {echanges.length === 0 && (
               <div className="suggestions" role="group" aria-label="Suggestions de questions">
                 {EXEMPLES.map((exemple) => (
@@ -148,15 +126,14 @@ export function Assistant() {
               </div>
             )}
             <form className="composer" onSubmit={soumettreFormulaire}>
-              <div className="champ" style={{ flex: 1 }}>
+              <div className="champ extensible">
                 <label className="etiquette" htmlFor="message">
                   Votre message
                 </label>
                 <textarea
                   id="message"
-                  className="saisie"
+                  className="saisie saisie-message"
                   rows={2}
-                  style={{ minHeight: 56 }}
                   maxLength={2000}
                   placeholder="Posez votre question"
                   value={message}
@@ -180,112 +157,63 @@ export function Assistant() {
           </div>
         </section>
 
-        <aside className="colonne" style={{ gridColumn: 'span 4' }} aria-labelledby="legende-titre">
-          <section className="panel" style={{ padding: 32 }}>
+        <aside className="colonne span-4" aria-labelledby="legende-titre">
+          <section className="panel interieur-32">
             <p className="surtitre">Repères</p>
-            <h2 id="legende-titre" className="h3" style={{ margin: '4px 0 24px' }}>
+            <h2 id="legende-titre" className="h3 titre-reperes">
               Lire les messages
             </h2>
-            <ul className="colonne" style={{ gap: 0 }}>
-              <li className="specimen" style={{ gridTemplateColumns: '88px minmax(0, 1fr)' }}>
-                <span
-                  aria-hidden="true"
-                  style={{
-                    display: 'block',
-                    height: 40,
-                    borderRadius: '14px 14px 4px 14px',
-                    background: '#E8ECF2',
-                  }}
-                />
+            <ul className="colonne ecart-0">
+              <li className="specimen">
+                <span className="echantillon echantillon-client" aria-hidden="true" />
                 <span>
-                  <span style={{ display: 'block', fontWeight: 500 }}>Vous</span>
+                  <span className="specimen-nom">Vous</span>
                   <span className="t13 muted">Vos messages.</span>
                 </span>
               </li>
-              <li className="specimen" style={{ gridTemplateColumns: '88px minmax(0, 1fr)' }}>
-                <span
-                  aria-hidden="true"
-                  style={{
-                    display: 'block',
-                    height: 40,
-                    border: '1px solid #CFCAC0',
-                    borderRadius: 8,
-                    background: '#FFFFFF',
-                    overflow: 'hidden',
-                  }}
-                >
-                  <span
-                    style={{
-                      display: 'block',
-                      height: 12,
-                      background: '#F4F2ED',
-                      borderBottom: '1px solid #E3DFD7',
-                    }}
-                  />
+              <li className="specimen">
+                <span className="echantillon echantillon-donnee" aria-hidden="true">
+                  <span className="echantillon-donnee-entete" />
                 </span>
                 <span>
-                  <span style={{ display: 'block', fontWeight: 500 }}>Donnée du système</span>
+                  <span className="specimen-nom">Donnée du système</span>
                   <span className="t13 muted">Lue en base. Elle fait foi.</span>
                 </span>
               </li>
-              <li className="specimen" style={{ gridTemplateColumns: '88px minmax(0, 1fr)' }}>
-                <span
-                  aria-hidden="true"
-                  style={{
-                    display: 'block',
-                    height: 40,
-                    border: '1px dashed #A9A397',
-                    borderRadius: '14px 14px 14px 4px',
-                    background: '#FFFFFF',
-                  }}
-                />
+              <li className="specimen">
+                <span className="echantillon echantillon-ia" aria-hidden="true" />
                 <span>
-                  <span style={{ display: 'block', fontWeight: 500 }}>
-                    Réponse de l’assistant, à vérifier
-                  </span>
+                  <span className="specimen-nom">Réponse de l’assistant, à vérifier</span>
                   <span className="t13 muted">Texte rédigé par le modèle. Il peut se tromper.</span>
                 </span>
               </li>
-              <li className="specimen" style={{ gridTemplateColumns: '88px minmax(0, 1fr)' }}>
-                <span
-                  aria-hidden="true"
-                  style={{ display: 'flex', alignItems: 'center', gap: 6, height: 40 }}
-                >
-                  <span style={{ flex: 1, height: 1, background: '#E3DFD7' }} />
+              <li className="specimen">
+                <span className="echantillon echantillon-action" aria-hidden="true">
+                  <span className="echantillon-trait" />
                   <span className="coche">{COCHE_ENCRE}</span>
-                  <span style={{ flex: 1, height: 1, background: '#E3DFD7' }} />
+                  <span className="echantillon-trait" />
                 </span>
                 <span>
-                  <span style={{ display: 'block', fontWeight: 500 }}>Action réalisée</span>
+                  <span className="specimen-nom">Action réalisée</span>
                   <span className="t13 muted">Ce que le système vient de faire.</span>
                 </span>
               </li>
-              <li className="specimen" style={{ gridTemplateColumns: '88px minmax(0, 1fr)' }}>
-                <span
-                  aria-hidden="true"
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    paddingLeft: 12,
-                    height: 40,
-                    borderRadius: 10,
-                    background: 'linear-gradient(150deg, #173651 0%, #0F2438 60%)',
-                  }}
-                >
-                  <span className="point" style={{ background: '#F2B860' }} />
+              <li className="specimen">
+                <span className="echantillon echantillon-carte" aria-hidden="true">
+                  <span className="point point-carte" />
                 </span>
                 <span>
-                  <span style={{ display: 'block', fontWeight: 500 }}>À confirmer par vous</span>
+                  <span className="specimen-nom">À confirmer par vous</span>
                   <span className="t13 muted">Rien n’est soumis sans votre clic.</span>
                 </span>
               </li>
             </ul>
           </section>
-          <section className="panel colonne" style={{ padding: 32, gap: 16 }}>
+          <section className="panel colonne interieur-32 ecart-16">
             <p className="t15 muted">
               Vous pouvez aussi faire votre demande vous-même, sans l’assistant.
             </p>
-            <Link className="btn btn-secondaire" to="/client" style={{ alignSelf: 'flex-start' }}>
+            <Link className="btn btn-secondaire aligne-debut" to="/client">
               Aller à mes plafonds
             </Link>
           </section>
@@ -324,9 +252,7 @@ function Element({ element }: { element: ElementAgent }) {
             <span className="coche" aria-hidden="true">
               {COCHE_ENCRE}
             </span>
-            <span className="t13 muted" style={{ fontWeight: 500 }}>
-              Action réalisée
-            </span>
+            <span className="t13 muted poids-500">Action réalisée</span>
             <span>{element.texte}</span>
             <Link className="lien" to={`/client/demandes/${element.demandeId}`}>
               Voir la demande
@@ -339,9 +265,7 @@ function Element({ element }: { element: ElementAgent }) {
         <div className="msg-donnee" role="group" aria-label="Donnée du système">
           <div className="donnee-entete">
             <span>Donnée du système : {NOM_OUTIL[element.outil] ?? element.outil}</span>
-            <span className="muted" style={{ fontWeight: 400 }}>
-              Lue en base, fait foi
-            </span>
+            <span className="muted poids-400">Lue en base, fait foi</span>
           </div>
           <div className="donnee-corps">
             <Donnee outil={element.outil} contenu={element.contenu} />
@@ -369,7 +293,7 @@ function Donnee({ outil, contenu }: { outil: string; contenu: unknown }) {
         <p>Refusé par le serveur, rien n’a été modifié :</p>
         <ul>
           {(c.erreurs as ErreurDetaillee[]).map((e, i) => (
-            <li key={i} className="t15" style={{ fontWeight: 400 }}>
+            <li key={i} className="t15 poids-400">
               {e.message}
             </li>
           ))}
@@ -413,11 +337,11 @@ function Donnee({ outil, contenu }: { outil: string; contenu: unknown }) {
     const d = c.demande as Demande;
     const avertissements = (c.avertissements as ErreurDetaillee[] | undefined) ?? [];
     return (
-      <div className="colonne" style={{ gap: 8 }}>
+      <div className="colonne ecart-8">
         <p>
           {d.reference ?? 'Brouillon'} : {libelleClient(d).texte}
         </p>
-        <p className="t15 muted" style={{ fontWeight: 400 }}>
+        <p className="t15 muted poids-400">
           {d.plafondDemande === null ? 'Plafond non renseigné' : enDirhams(d.plafondDemande)},{' '}
           {d.dureeJours === null
             ? 'durée non renseignée'
@@ -426,7 +350,7 @@ function Donnee({ outil, contenu }: { outil: string; contenu: unknown }) {
         </p>
         {avertissements.length > 0 && (
           <div className="message message-avertissement">
-            <p style={{ fontWeight: 500 }}>Reste à compléter avant de soumettre</p>
+            <p className="poids-500">Reste à compléter avant de soumettre</p>
             <ul>
               {avertissements.map((a) => (
                 <li key={`${a.code}-${a.champ ?? ''}`}>{a.message}</li>
@@ -476,38 +400,18 @@ function Carte({ carte }: { carte: CarteConfirmation }) {
   }
 
   return (
-    <section
-      className="coffre msg-confirmer"
-      style={{ padding: '32px 40px' }}
-      aria-label="À confirmer par vous"
-    >
-      <div className="colonne" style={{ gap: 24 }}>
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            gap: 16,
-            flexWrap: 'wrap',
-          }}
-        >
+    <section className="coffre msg-confirmer" aria-label="À confirmer par vous">
+      <div className="colonne">
+        <div className="carte-entete">
           <Etat ton="action">À confirmer par vous</Etat>
           <span className="t13 muted">Brouillon préparé avec l’assistant</span>
         </div>
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'flex-end',
-            gap: 24,
-            flexWrap: 'wrap',
-          }}
-        >
-          <div className="colonne" style={{ gap: 4 }}>
+        <div className="carte-montant">
+          <div className="colonne ecart-4">
             <p className="t13 muted">Plafond demandé</p>
             <GrandMontant montant={carte.plafondDemande} corps={64} />
           </div>
-          <dl className="coffre-encart faits faits-ligne" style={{ padding: '16px 24px', gap: 32 }}>
+          <dl className="coffre-encart faits faits-ligne carte-faits">
             <div>
               <dt>Durée</dt>
               <dd>
@@ -529,16 +433,12 @@ function Carte({ carte }: { carte: CarteConfirmation }) {
         {etat === 'soumise' ? (
           <p role="status">
             Demande soumise.{' '}
-            <Link
-              className="lien"
-              style={{ color: '#FFFFFF' }}
-              to={`/client/demandes/${carte.demandeId}`}
-            >
+            <Link className="lien" to={`/client/demandes/${carte.demandeId}`}>
               Suivre la demande
             </Link>
           </p>
         ) : (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 24, flexWrap: 'wrap' }}>
+          <div className="rangee">
             <button
               type="button"
               className="btn btn-clair"

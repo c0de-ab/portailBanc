@@ -123,8 +123,8 @@ export function DetailDossier() {
         <span aria-hidden="true">/</span>
         <span>{demande.reference}</span>
       </nav>
-      <div className="entete" style={{ alignItems: 'flex-start' }}>
-        <div className="colonne" style={{ gap: 8 }}>
+      <div className="entete enfants-haut">
+        <div className="colonne ecart-8">
           <div className="titre-ligne">
             <h1 className="h1">{demande.reference}</h1>
             <Etat ton={libelle.ton}>{libelle.texte}</Etat>
@@ -135,39 +135,39 @@ export function DetailDossier() {
         </div>
       </div>
       {info && (
-        <p className="message message-info" role="status" style={{ marginBottom: 24 }}>
+        <p className="message message-info marge-bas-24" role="status">
           {info}
         </p>
       )}
 
       <div className="g12">
-        <div className="colonne" style={{ gridColumn: 'span 8' }}>
-          <section className="coffre" style={{ padding: 40 }} aria-label="Plafond demandé">
+        <div className="colonne span-8">
+          <section className="coffre interieur-40" aria-label="Plafond demandé">
             <div className="coffre-haut">
-              <div className="colonne" style={{ gap: 12 }}>
+              <div className="colonne ecart-12">
                 <p className="coffre-label">Plafond demandé</p>
                 <GrandMontant montant={montant} corps={72} />
               </div>
-              <dl className="coffre-encart lignes" style={{ padding: '0 20px', minWidth: 248 }}>
-                <div className="ligne" style={{ padding: '12px 0' }}>
+              <dl className="coffre-encart lignes encart-plafond">
+                <div className="ligne ligne-serree">
                   <dt className="ligne-cle">Durée</dt>
                   <dd className="ligne-val">
                     {demande.dureeJours === null ? '' : duree(demande.dureeJours)}
                   </dd>
                 </div>
-                <div className="ligne" style={{ padding: '12px 0' }}>
+                <div className="ligne ligne-serree">
                   <dt className="ligne-cle">Appliqué aujourd’hui</dt>
                   <dd className="ligne-val">{enDirhams(applique)}</dd>
                 </div>
               </dl>
             </div>
-            <div style={{ marginTop: 24 }}>
+            <div className="marge-haut-24">
               <Jauge plafondInitial={compte.plafondInitial} applique={applique} demande={montant} />
             </div>
-            <div className="coffre-sep" style={{ margin: '24px 0' }} />
-            <div style={{ display: 'flex', gap: '8px 40px', flexWrap: 'wrap' }}>
+            <div className="coffre-sep marge-v-24" />
+            <div className="seuils">
               <p>
-                <span style={{ fontWeight: 500 }}>
+                <span className="poids-500">
                   {montant <= SEUIL_DECISION_CONSEILLER
                     ? 'Jusqu’à 30 000 DH'
                     : 'Au-delà de 30 000 DH'}
@@ -179,7 +179,7 @@ export function DetailDossier() {
                 </span>
               </p>
               <p>
-                <span style={{ fontWeight: 500 }}>
+                <span className="poids-500">
                   {montant <= SEUIL_JUSTIFICATIF ? 'Jusqu’à 50 000 DH' : 'Au-delà de 50 000 DH'}
                 </span>
                 <span className="muted">
@@ -191,12 +191,9 @@ export function DetailDossier() {
             </div>
           </section>
 
-          <section className="panel" style={{ padding: 32 }} aria-label="Informations">
-            <div
-              className="deux-col"
-              style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 40 }}
-            >
-              <div className="colonne" style={{ gap: 16 }}>
+          <section className="panel interieur-32" aria-label="Informations">
+            <div className="deux-col ecart-40">
+              <div className="colonne ecart-16">
                 <h2 className="h3">Client</h2>
                 <dl className="lignes">
                   <div className="ligne">
@@ -219,7 +216,7 @@ export function DetailDossier() {
                   </div>
                 </dl>
               </div>
-              <div className="colonne" style={{ gap: 16 }}>
+              <div className="colonne ecart-16">
                 <h2 className="h3">Dossier</h2>
                 <dl className="lignes">
                   <div className="ligne">
@@ -274,35 +271,14 @@ export function DetailDossier() {
           </section>
 
           {decisions.length > 0 && (
-            <section
-              className="panel colonne"
-              style={{ padding: 32 }}
-              aria-labelledby="decisions-titre"
-            >
+            <section className="panel colonne interieur-32" aria-labelledby="decisions-titre">
               <h2 id="decisions-titre" className="h3">
                 Décisions et recommandations
               </h2>
               <ul className="lignes">
                 {[...decisions].reverse().map((d, i) => (
-                  <li
-                    key={i}
-                    className="colonne"
-                    style={{
-                      gap: 8,
-                      paddingTop: i === 0 ? 0 : 24,
-                      paddingBottom: 24,
-                      borderTop: i === 0 ? undefined : '1px solid #E9E6DF',
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'baseline',
-                        gap: 16,
-                        flexWrap: 'wrap',
-                      }}
-                    >
+                  <li key={i} className="colonne entree ecart-8">
+                    <div className="entree-tete retour-ligne">
                       <Etat
                         ton={
                           d.type === 'REJET' || d.type === 'RECOMMANDATION_DEFAVORABLE'
@@ -317,22 +293,16 @@ export function DetailDossier() {
                         la v{d.revisionNo}, le {dateBreve(d.decideeLe)}
                       </span>
                     </div>
-                    <p className="t15 texte-libre" style={{ paddingLeft: 16 }}>
-                      {d.motif}
-                    </p>
+                    <p className="t15 texte-libre motif-decision">{d.motif}</p>
                   </li>
                 ))}
               </ul>
             </section>
           )}
 
-          <div
-            className="deux-col"
-            style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 24 }}
-          >
+          <div className="deux-col">
             <section
-              className="panel colonne"
-              style={{ padding: 32, gap: 16 }}
+              className="panel colonne interieur-32 ecart-16"
               aria-labelledby="versions-titre"
             >
               <h2 id="versions-titre" className="h3">
@@ -340,20 +310,9 @@ export function DetailDossier() {
               </h2>
               {revisions.length === 0 && <p className="muted">Aucune version soumise.</p>}
               {[...revisions].reverse().map((r) => (
-                <div
-                  key={r.revisionNo}
-                  className="colonne"
-                  style={{ gap: 4, padding: 16, borderRadius: 12, background: '#F7F5F1' }}
-                >
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'baseline',
-                      gap: 16,
-                    }}
-                  >
-                    <span style={{ fontWeight: 600 }}>v{r.revisionNo}</span>
+                <div key={r.revisionNo} className="colonne version-carte">
+                  <div className="entree-tete">
+                    <span className="poids-600">v{r.revisionNo}</span>
                     <span className="t13 muted">{dateBreve(r.soumiseLe)}</span>
                   </div>
                   <p className="muted">
@@ -365,8 +324,7 @@ export function DetailDossier() {
               ))}
             </section>
             <section
-              className="panel colonne"
-              style={{ padding: 32, gap: 16 }}
+              className="panel colonne interieur-32 ecart-16"
               aria-labelledby="historique-titre"
             >
               <h2 id="historique-titre" className="h3">
@@ -374,21 +332,13 @@ export function DetailDossier() {
               </h2>
               <ol className="historique">
                 {[...historique].reverse().map((h, i) => (
-                  <li
-                    key={i}
-                    className="histo"
-                    style={{ gridTemplateColumns: '128px minmax(0, 1fr)' }}
-                  >
+                  <li key={i} className="histo">
                     <span className="histo-date">{dateBreve(h.date)}</span>
                     <span>
                       {LIBELLE_EVENEMENT[h.action] ?? h.action}
                       {h.acteur && `, ${h.acteur}`}
                       {h.viaAgent && ' (via l’assistant)'}
-                      {h.motif && (
-                        <span className="t13 muted texte-libre" style={{ display: 'block' }}>
-                          {h.motif}
-                        </span>
-                      )}
+                      {h.motif && <span className="t13 muted texte-libre bloc">{h.motif}</span>}
                     </span>
                   </li>
                 ))}
@@ -397,14 +347,10 @@ export function DetailDossier() {
           </div>
         </div>
 
-        <div className="colonne" style={{ gridColumn: 'span 4' }}>
+        <div className="colonne span-4">
           {actions.length > 0 && (
-            <aside
-              className="panel colonne"
-              style={{ padding: 32, gap: 24 }}
-              aria-labelledby="decision-titre"
-            >
-              <div className="colonne" style={{ gap: 8 }}>
+            <aside className="panel colonne interieur-32 ecart-24" aria-labelledby="decision-titre">
+              <div className="colonne ecart-8">
                 <p className="surtitre">Votre action</p>
                 <h2 id="decision-titre" className="h2">
                   Décision
@@ -423,9 +369,8 @@ export function DetailDossier() {
                 </label>
                 <textarea
                   id="d-motif"
-                  className="saisie"
+                  className="saisie saisie-motif"
                   rows={4}
-                  style={{ minHeight: 128 }}
                   maxLength={2000}
                   value={motif}
                   onChange={(e) => setMotif(e.target.value)}
@@ -433,7 +378,7 @@ export function DetailDossier() {
                 <p className="aide">Le motif est obligatoire pour toute décision.</p>
               </div>
               <ListeErreurs erreurs={erreurs} />
-              <div className="colonne" style={{ gap: 12 }}>
+              <div className="colonne ecart-12">
                 {actions.map((action) => (
                   <button
                     key={action}
@@ -467,34 +412,33 @@ export function DetailDossier() {
 
           {relance && (
             <aside
-              className="panel colonne"
-              style={{ padding: 32, gap: 24 }}
+              className="panel colonne interieur-32 ecart-24"
               aria-labelledby="activation-titre"
             >
-              <div className="colonne" style={{ gap: 12 }}>
+              <div className="colonne ecart-12">
                 <h2 id="activation-titre" className="h2">
                   Activation
                 </h2>
                 <Etat ton="action">{libelle.texte}</Etat>
               </div>
               <dl className="lignes">
-                <div className="ligne" style={{ padding: '12px 0' }}>
+                <div className="ligne ligne-serree">
                   <dt className="ligne-cle">Décision favorable</dt>
                   <dd className="ligne-val">
                     {enDirhams(montant)}
                     {demande.dureeJours !== null && `, ${duree(demande.dureeJours)}`}
                   </dd>
                 </div>
-                <div className="ligne" style={{ padding: '12px 0' }}>
+                <div className="ligne ligne-serree">
                   <dt className="ligne-cle">Plafond appliqué par la banque</dt>
                   <dd className="ligne-val">{enDirhams(compte.plafondInitial)}, inchangé</dd>
                 </div>
               </dl>
               {demande.derniereErreur && (
-                <div className="colonne" style={{ gap: 8 }}>
+                <div className="colonne ecart-8">
                   <p className="etiquette">Dernière erreur de la banque</p>
                   <div className="boite-erreur" role="status">
-                    <p style={{ fontWeight: 500 }}>{demande.derniereErreur}</p>
+                    <p className="poids-500">{demande.derniereErreur}</p>
                   </div>
                 </div>
               )}
@@ -528,10 +472,8 @@ export function DetailDossier() {
           )}
 
           {actions.length === 0 && !relance && (
-            <aside className="panel" style={{ padding: 32 }}>
-              <h2 className="h3" style={{ marginBottom: 8 }}>
-                Décision
-              </h2>
+            <aside className="panel interieur-32">
+              <h2 className="h3 marge-bas-8">Décision</h2>
               <p className="muted">Aucune décision n’est attendue de vous sur ce dossier.</p>
             </aside>
           )}

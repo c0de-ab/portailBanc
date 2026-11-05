@@ -107,7 +107,7 @@ export function Jauge({
       ? `Plafond appliqué : ${enDh(applique)}, sur une échelle de 0 à 100 000 DH.`
       : `Plafond demandé : ${enDh(demande)} ; plafond appliqué : ${enDh(applique)} ; échelle de 0 à 100 000 DH.`;
   return (
-    <div className="colonne" style={{ gap: 16 }}>
+    <div className="colonne ecart-16">
       <div className="jauge" role="img" aria-label={description}>
         <div className="jauge-piste">
           {demande !== null && (
@@ -177,7 +177,8 @@ export function Jauge({
 // ou abandonnée n'a pas de frise.
 type EtapeVue = { nom: string; etat: 'fait' | 'encours' | 'refus' | 'avenir'; info?: string };
 
-function etapesDe(d: Demande): EtapeVue[] | null {
+// Exportée pour les tests (composants.test.ts).
+export function etapesDe(d: Demande): EtapeVue[] | null {
   const noms = ['Brouillon', 'Examen', 'Décision', 'Activation', 'Échéance'];
   const index: Partial<Record<Demande['statut'], number>> = {
     BROUILLON: 0,

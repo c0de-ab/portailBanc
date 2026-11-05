@@ -60,8 +60,8 @@ export function ListeDossiers() {
 
   return (
     <>
-      <div className="entete" style={{ alignItems: 'flex-start' }}>
-        <div className="colonne" style={{ gap: 4 }}>
+      <div className="entete enfants-haut">
+        <div className="colonne ecart-4">
           <p className="surtitre">{libelleRole(roles)}</p>
           <h1 className="h1">{titre}</h1>
         </div>
@@ -69,7 +69,7 @@ export function ListeDossiers() {
       </div>
 
       {/* La synthèse des trois files ; chaque tuile mène à son tableau. */}
-      <div className="g12" style={{ marginBottom: 56 }}>
+      <div className="g12 marge-bas-56">
         <Tuile
           cible="g-traiter"
           ton="action"
@@ -93,7 +93,7 @@ export function ListeDossiers() {
         />
       </div>
 
-      <div className="colonne" style={{ gap: 56 }}>
+      <div className="colonne ecart-56">
         <Groupe
           id="g-traiter"
           titre="À traiter"
@@ -132,7 +132,7 @@ function Groupe({
   if (dossiers.length === 0) {
     return (
       <section id={id} aria-labelledby={id + '-titre'}>
-        <div style={{ display: 'flex', alignItems: 'baseline', flexWrap: 'wrap', gap: '4px 16px' }}>
+        <div className="file-vide">
           <h2 id={id + '-titre'} className="h2">
             {titre}
           </h2>
@@ -143,7 +143,7 @@ function Groupe({
   }
   return (
     <section id={id} aria-labelledby={id + '-titre'}>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 16, marginBottom: 16 }}>
+      <div className="titre-file">
         <h2 id={id + '-titre'} className="h2">
           {titre}
         </h2>
@@ -152,13 +152,13 @@ function Groupe({
         </span>
       </div>
       <div className="panel tableau-boite">
-        <table className="tableau" style={{ tableLayout: 'fixed' }}>
+        <table className="tableau tableau-dossiers">
           <colgroup>
-            <col style={{ width: '22%' }} />
-            <col style={{ width: '14%' }} />
-            <col style={{ width: '12%' }} />
-            <col style={{ width: '32%' }} />
-            <col style={{ width: '20%' }} />
+            <col className="col-reference" />
+            <col className="col-plafond" />
+            <col className="col-duree" />
+            <col className="col-etat" />
+            <col className="col-date" />
           </colgroup>
           <thead>
             <tr>
@@ -217,20 +217,8 @@ function Tuile({
   nombre: number;
 }) {
   return (
-    <a
-      className="panel"
-      href={'#' + cible}
-      style={{
-        gridColumn: 'span 4',
-        padding: '24px 28px',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'flex-end',
-        textDecoration: 'none',
-        color: '#16202A',
-      }}
-    >
-      <span className="colonne" style={{ gap: 8 }}>
+    <a className="panel tuile span-4" href={'#' + cible}>
+      <span className="colonne ecart-8">
         <Etat ton={ton}>{titre}</Etat>
         <span className="t13 muted">{detail}</span>
       </span>

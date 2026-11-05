@@ -221,7 +221,7 @@ export function FormulaireDemande() {
     return (
       <>
         <div className="entete">
-          <div className="colonne" style={{ gap: 8 }}>
+          <div className="colonne ecart-8">
             {filAriane}
             <h1 className="h1">Vérifiez votre demande</h1>
             <p className="muted">
@@ -232,19 +232,19 @@ export function FormulaireDemande() {
         </div>
 
         <div className="g12">
-          <div className="colonne" style={{ gridColumn: 'span 7' }}>
-            <section className="coffre" style={{ padding: 40 }} aria-labelledby="c-titre">
-              <div className="colonne" style={{ gap: 12 }}>
+          <div className="colonne span-7">
+            <section className="coffre interieur-40" aria-labelledby="c-titre">
+              <div className="colonne ecart-12">
                 <p id="c-titre" className="coffre-label">
                   Plafond demandé
                 </p>
                 <GrandMontant montant={montantConfirme} />
-                <p style={{ marginTop: 8 }}>
+                <p className="marge-haut-8">
                   <Etat ton={libelle.ton}>{libelle.texte}</Etat>
                 </p>
               </div>
               {plafondInitial !== null && (
-                <div style={{ marginTop: 24 }}>
+                <div className="marge-haut-24">
                   <Jauge
                     plafondInitial={plafondInitial}
                     applique={plafondInitial}
@@ -254,11 +254,7 @@ export function FormulaireDemande() {
               )}
             </section>
 
-            <section
-              className="panel"
-              style={{ padding: '16px 32px' }}
-              aria-label="Détail de la demande"
-            >
+            <section className="panel panel-lignes" aria-label="Détail de la demande">
               <dl className="lignes">
                 <div className="ligne">
                   <dt className="ligne-cle">Plafond demandé</dt>
@@ -285,12 +281,8 @@ export function FormulaireDemande() {
             </section>
           </div>
 
-          <aside
-            className="panel colonne"
-            style={{ gridColumn: 'span 5', padding: 32 }}
-            aria-labelledby="ensuite-titre"
-          >
-            <div className="colonne" style={{ gap: 4 }}>
+          <aside className="panel colonne span-5 interieur-32" aria-labelledby="ensuite-titre">
+            <div className="colonne ecart-4">
               <p className="surtitre">Après votre clic</p>
               <h2 id="ensuite-titre" className="h2">
                 Ce qui se passera
@@ -322,7 +314,7 @@ export function FormulaireDemande() {
             </ol>
             <ListeErreurs erreurs={erreurs} />
             <div className="separateur" />
-            <div className="colonne" style={{ gap: 12 }}>
+            <div className="colonne ecart-12">
               <button
                 type="button"
                 className="btn btn-primaire btn-plein"
@@ -339,9 +331,7 @@ export function FormulaireDemande() {
                 Modifier la demande
               </button>
             </div>
-            <p className="muted" style={{ textAlign: 'center', fontWeight: 500 }}>
-              Rien n’est soumis sans ce clic.
-            </p>
+            <p className="muted centre poids-500">Rien n’est soumis sans ce clic.</p>
           </aside>
         </div>
       </>
@@ -350,8 +340,8 @@ export function FormulaireDemande() {
 
   return (
     <>
-      <div className="entete" style={{ alignItems: 'flex-start' }}>
-        <div className="colonne" style={{ gap: 8 }}>
+      <div className="entete enfants-haut">
+        <div className="colonne ecart-8">
           {filAriane}
           <h1 className="h1">
             {complement
@@ -364,7 +354,7 @@ export function FormulaireDemande() {
               : 'Chaque modification est enregistrée automatiquement, sans être soumise.'}
           </p>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 24, flexWrap: 'wrap' }}>
+        <div className="rangee">
           <Link className="lien" to="/client/assistant">
             Préparer avec l’assistant
           </Link>
@@ -372,15 +362,14 @@ export function FormulaireDemande() {
         </div>
       </div>
       {info && (
-        <p className="message message-info" role="status" style={{ marginBottom: 24 }}>
+        <p className="message message-info marge-bas-24" role="status">
           {info}
         </p>
       )}
 
       <div className="g12">
         <form
-          className="panel colonne"
-          style={{ gridColumn: 'span 7', padding: 40, gap: 32 }}
+          className="panel colonne span-7 interieur-40 ecart-32"
           onSubmit={(e) => e.preventDefault()}
         >
           <div className="champ">
@@ -409,9 +398,7 @@ export function FormulaireDemande() {
           </div>
 
           <fieldset className="champ">
-            <legend className="etiquette" style={{ marginBottom: 8 }}>
-              Durée
-            </legend>
+            <legend className="etiquette marge-bas-8">Durée</legend>
             <div className="choix">
               {[1, 2, 3, 4, 5, 6, 7].map((j) => (
                 <label key={j} className="choix-opt">
@@ -426,7 +413,7 @@ export function FormulaireDemande() {
                 </label>
               ))}
             </div>
-            <p className="aide" style={{ marginTop: 8 }}>
+            <p className="aide marge-haut-8">
               De 1 à 7 jours. Le plafond revient ensuite au plafond habituel.
             </p>
           </fieldset>
@@ -453,9 +440,7 @@ export function FormulaireDemande() {
                   Justificatif
                 </label>
                 {justificatifRequis ? (
-                  <span className="t13" style={{ color: '#8F5300', fontWeight: 500 }}>
-                    Obligatoire
-                  </span>
+                  <span className="t13 texte-obligatoire">Obligatoire</span>
                 ) : (
                   <span className="t13 muted">Facultatif</span>
                 )}
@@ -467,8 +452,8 @@ export function FormulaireDemande() {
                     : 'depot depot-neutre'
                 }
               >
-                <div className="colonne" style={{ gap: 4, minWidth: 0 }}>
-                  <span style={{ fontWeight: 500 }}>
+                <div className="colonne ecart-4 min-0">
+                  <span className="poids-500">
                     {demande.justificatifNom
                       ? `Fichier enregistré : ${demande.justificatifNom}`
                       : 'Aucun fichier déposé'}
@@ -490,15 +475,7 @@ export function FormulaireDemande() {
 
           <div className="separateur" />
 
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              gap: 24,
-              flexWrap: 'wrap',
-            }}
-          >
+          <div className="barre-actions">
             <button
               type="button"
               className="btn btn-primaire"
@@ -522,13 +499,9 @@ export function FormulaireDemande() {
           </div>
         </form>
 
-        <aside
-          className="coffre"
-          style={{ gridColumn: 'span 5', padding: 32 }}
-          aria-labelledby="recap-titre"
-        >
-          <div className="colonne" style={{ gap: 24 }}>
-            <div className="colonne" style={{ gap: 8 }}>
+        <aside className="coffre span-5 interieur-32" aria-labelledby="recap-titre">
+          <div className="colonne ecart-24">
+            <div className="colonne ecart-8">
               <h2 id="recap-titre" className="coffre-label">
                 Récapitulatif
               </h2>
@@ -549,7 +522,7 @@ export function FormulaireDemande() {
               />
             )}
 
-            <div className="coffre-encart lignes" style={{ padding: '0 20px' }}>
+            <div className="coffre-encart lignes encart-lignes">
               <div className="ligne">
                 <span className="ligne-cle">Plafond habituel</span>
                 <span className="ligne-val">
@@ -589,7 +562,7 @@ function Avertissements({ avertissements }: { avertissements: ErreurDetaillee[] 
     <div aria-live="polite">
       {avertissements.length > 0 && (
         <div className="message message-avertissement">
-          <p style={{ fontWeight: 500 }}>Avant de soumettre</p>
+          <p className="poids-500">Avant de soumettre</p>
           <ul>
             {avertissements.map((a) => (
               <li key={`${a.code}-${a.champ ?? ''}`}>{a.message}</li>

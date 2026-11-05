@@ -36,9 +36,7 @@ export function Connexion() {
       <p className="marque connexion-marque">Portail bancaire</p>
 
       <form className="panel connexion-carte" onSubmit={envoyer}>
-        <h1 className="h1" style={{ textAlign: 'center', marginBottom: 8 }}>
-          Connexion
-        </h1>
+        <h1 className="h1 centre marge-bas-8">Connexion</h1>
         <div className="champ">
           <label className="etiquette" htmlFor="connexion-email">
             Adresse e-mail
@@ -74,9 +72,8 @@ export function Connexion() {
         )}
         <button
           type="submit"
-          className="btn btn-primaire btn-plein"
+          className="btn btn-primaire btn-plein connexion-bouton"
           disabled={envoi}
-          style={{ marginTop: 8, height: 52 }}
         >
           {envoi ? 'Connexion…' : 'Se connecter'}
         </button>

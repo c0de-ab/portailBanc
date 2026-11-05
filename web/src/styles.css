@@ -2125,3 +2125,391 @@ a.suggestion {
     transition: none !important;
   }
 }
+
+/* ---------- Blocs propres à un écran ----------
+   Ces règles et les utilitaires qui suivent sont placés en fin de feuille : à priorité égale,
+   ils l'emportent sur les règles générales des composants. Les règles mobiles en !important
+   (panneaux, grille à une colonne) gardent la main. */
+
+/* Assistant */
+.conversation {
+  display: flex;
+  flex-direction: column;
+}
+.zone-saisie {
+  border-top: 1px solid #e9e6df;
+  padding: 24px 40px 32px;
+  gap: 16px;
+}
+.saisie.saisie-message {
+  min-height: 56px;
+}
+.barre-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.rangee {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.bandeau-indisponible {
+  padding: 24px 32px;
+}
+.indisponible-texte {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  max-width: 440px;
+}
+.titre-reperes {
+  margin: 4px 0 24px;
+}
+.specimen-nom {
+  display: block;
+  font-weight: 500;
+}
+/* Les échantillons de la légende reprennent l'apparence de chaque type de message. */
+.echantillon {
+  display: block;
+  height: 40px;
+}
+.echantillon-client {
+  border-radius: 14px 14px 4px 14px;
+  background: #e8ecf2;
+}
+.echantillon-donnee {
+  border: 1px solid #cfcac0;
+  border-radius: 8px;
+  background: #ffffff;
+  overflow: hidden;
+}
+.echantillon-donnee-entete {
+  display: block;
+  height: 12px;
+  background: #f4f2ed;
+  border-bottom: 1px solid #e3dfd7;
+}
+.echantillon-ia {
+  border: 1px dashed #a9a397;
+  border-radius: 14px 14px 14px 4px;
+  background: #ffffff;
+}
+.echantillon-action {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.echantillon-trait {
+  flex: 1;
+  height: 1px;
+  background: #e3dfd7;
+}
+.echantillon-carte {
+  display: flex;
+  align-items: center;
+  padding-left: 12px;
+  border-radius: 10px;
+  background: linear-gradient(150deg, #173651 0%, #0f2438 60%);
+}
+.point-carte {
+  background: #f2b860;
+}
+/* Carte de confirmation */
+.msg-confirmer {
+  padding: 32px 40px;
+}
+.carte-entete {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.carte-montant {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.carte-faits {
+  padding: 16px 24px;
+  gap: 32px;
+}
+
+/* Coffres et encarts */
+.coffre-large {
+  padding: 48px 56px 40px;
+}
+.encart-compte {
+  padding: 8px 24px;
+  min-width: 360px;
+}
+.encart-demande {
+  padding: 24px;
+  min-width: 360px;
+  max-width: 420px;
+  gap: 8px;
+}
+.encart-lignes {
+  padding: 0 20px;
+}
+.encart-plafond {
+  padding: 0 20px;
+  min-width: 248px;
+}
+.ligne-serree {
+  padding: 12px 0;
+}
+.ligne-compacte {
+  padding: 8px 0;
+}
+.seuils {
+  display: flex;
+  gap: 8px 40px;
+  flex-wrap: wrap;
+}
+.panel-lignes {
+  padding: 16px 32px;
+}
+
+/* Deux panneaux côte à côte ; une seule colonne sur mobile (règle des petites largeurs). */
+.deux-col {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+}
+
+/* Entrées d'une liste (décisions, versions) : séparées par un filet, sauf la première. */
+.entree {
+  padding: 24px 0;
+  border-top: 1px solid #e9e6df;
+}
+.entree:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+.entree-version {
+  border-top-color: #e3dfd7;
+}
+.entree-tete {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+}
+.motif-decision {
+  padding-left: 16px;
+}
+.motif-encadre {
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: #f7f5f1;
+}
+.version-carte {
+  gap: 4px;
+  padding: 16px;
+  border-radius: 12px;
+  background: #f7f5f1;
+}
+
+/* Formulaires */
+.saisie.saisie-motif {
+  min-height: 128px;
+}
+.groupe-boutons {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.texte-obligatoire {
+  color: #8f5300;
+  font-weight: 500;
+}
+
+/* Listes du personnel */
+.titre-file {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.file-vide {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+}
+.tuile {
+  padding: 24px 28px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  text-decoration: none;
+  color: #16202a;
+}
+.tableau-dossiers {
+  table-layout: fixed;
+}
+.tableau-dossiers .col-reference {
+  width: 22%;
+}
+.tableau-dossiers .col-plafond {
+  width: 14%;
+}
+.tableau-dossiers .col-duree {
+  width: 12%;
+}
+.tableau-dossiers .col-etat {
+  width: 32%;
+}
+.tableau-dossiers .col-date {
+  width: 20%;
+}
+
+/* Connexion */
+.connexion-bouton {
+  margin-top: 8px;
+  height: 52px;
+}
+
+/* ---------- Utilitaires ----------
+   Pour les réglages ponctuels d'un écran : placement dans la grille, espacements sur la
+   grille de 8 px, graisse. Chacun ne fait qu'une chose. */
+.span-4 {
+  grid-column: span 4;
+}
+.span-5 {
+  grid-column: span 5;
+}
+.span-7 {
+  grid-column: span 7;
+}
+.span-8 {
+  grid-column: span 8;
+}
+.span-12 {
+  grid-column: span 12;
+}
+.fin-3 {
+  grid-column: 10 / span 3;
+}
+.aligne-debut {
+  align-self: flex-start;
+}
+.etire {
+  align-self: stretch;
+}
+.enfants-haut {
+  align-items: flex-start;
+}
+.enfants-bas {
+  align-items: end;
+}
+.retour-ligne {
+  flex-wrap: wrap;
+}
+.extensible {
+  flex: 1;
+}
+.bloc {
+  display: block;
+}
+.min-0 {
+  min-width: 0;
+}
+.largeur-420 {
+  max-width: 420px;
+}
+.largeur-520 {
+  max-width: 520px;
+}
+.centre {
+  text-align: center;
+}
+.poids-400 {
+  font-weight: 400;
+}
+.poids-500 {
+  font-weight: 500;
+}
+.poids-600 {
+  font-weight: 600;
+}
+.interieur-32 {
+  padding: 32px;
+}
+.interieur-40 {
+  padding: 40px;
+}
+.interieur-large {
+  padding: 32px 40px;
+}
+.ecart-0 {
+  gap: 0;
+}
+.ecart-4 {
+  gap: 4px;
+}
+.ecart-8 {
+  gap: 8px;
+}
+.ecart-12 {
+  gap: 12px;
+}
+.ecart-16 {
+  gap: 16px;
+}
+.ecart-24 {
+  gap: 24px;
+}
+.ecart-32 {
+  gap: 32px;
+}
+.ecart-40 {
+  gap: 40px;
+}
+.ecart-56 {
+  gap: 56px;
+}
+.marge-0 {
+  margin: 0;
+}
+.marge-v-24 {
+  margin: 24px 0;
+}
+.marge-v-32 {
+  margin: 32px 0;
+}
+.marge-haut-4 {
+  margin-top: 4px;
+}
+.marge-haut-8 {
+  margin-top: 8px;
+}
+.marge-haut-16 {
+  margin-top: 16px;
+}
+.marge-haut-24 {
+  margin-top: 24px;
+}
+.marge-haut-32 {
+  margin-top: 32px;
+}
+.marge-haut-auto {
+  margin-top: auto;
+}
+.marge-bas-8 {
+  margin-bottom: 8px;
+}
+.marge-bas-24 {
+  margin-bottom: 24px;
+}
+.marge-bas-56 {
+  margin-bottom: 56px;
+}

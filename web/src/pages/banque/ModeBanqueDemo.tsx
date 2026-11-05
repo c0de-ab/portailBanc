@@ -30,9 +30,7 @@ export function ModeBanqueDemo() {
 
   return (
     <fieldset className="mode-banque">
-      <legend className="t13 muted" style={{ fontWeight: 500, marginBottom: 8 }}>
-        Banque simulée (démonstration)
-      </legend>
+      <legend className="t13 muted poids-500 marge-bas-8">Banque simulée (démonstration)</legend>
       <div className="segment">
         {(Object.keys(LIBELLE_MODE_BANQUE) as ModeBanque[]).map((m) => (
           <label key={m} className="segment-opt">
@@ -47,7 +45,7 @@ export function ModeBanqueDemo() {
           </label>
         ))}
       </div>
-      <p className="aide" style={{ marginTop: 8, maxWidth: 420 }}>
+      <p className="aide marge-haut-8 largeur-420">
         Ce mode s’applique aux nouvelles opérations ; une opération déjà connue de la banque renvoie
         toujours son résultat enregistré.
       </p>

@@ -89,8 +89,8 @@ export function DetailDemande() {
         <span aria-hidden="true">/</span>
         <span>{demande.reference ?? 'Brouillon'}</span>
       </nav>
-      <div className="entete" style={{ alignItems: 'flex-start' }}>
-        <div className="colonne" style={{ gap: 8 }}>
+      <div className="entete enfants-haut">
+        <div className="colonne ecart-8">
           <div className="titre-ligne">
             <h1 className="h1">{demande.reference ?? 'Brouillon'}</h1>
             <Etat ton={libelle.ton} className="etat-long">
@@ -104,7 +104,7 @@ export function DetailDemande() {
             </p>
           )}
         </div>
-        <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+        <div className="groupe-boutons">
           {demande.statut === 'BROUILLON' && (
             <Link className="btn btn-primaire" to={`/client/comptes/${demande.compteId}/brouillon`}>
               Reprendre le brouillon
@@ -123,7 +123,7 @@ export function DetailDemande() {
         </div>
       </div>
       {info && (
-        <p className="message message-info" role="status" style={{ marginBottom: 24 }}>
+        <p className="message message-info marge-bas-24" role="status">
           {info}
         </p>
       )}
@@ -131,31 +131,25 @@ export function DetailDemande() {
 
       <div className="g12">
         {demande.statut === 'COMPLEMENT_DEMANDE' && (
-          <section
-            className="bandeau-action"
-            style={{ gridColumn: 'span 12', padding: 40 }}
-            aria-labelledby="action-titre"
-          >
-            <div className="g12" style={{ alignItems: 'end' }}>
-              <div className="colonne" style={{ gridColumn: 'span 8', gap: 16 }}>
+          <section className="bandeau-action span-12 interieur-40" aria-labelledby="action-titre">
+            <div className="g12 enfants-bas">
+              <div className="colonne span-8 ecart-16">
                 <h2 id="action-titre" className="h2 titre-action">
                   Complément demandé : action requise
                 </h2>
                 {dernierComplement && (
-                  <div className="colonne" style={{ gap: 8 }}>
-                    <p className="t13" style={{ color: '#5A6472', fontWeight: 500 }}>
-                      Message de votre conseiller
-                    </p>
-                    <blockquote className="citation" style={{ margin: 0 }}>
+                  <div className="colonne ecart-8">
+                    <p className="t13 muted poids-500">Message de votre conseiller</p>
+                    <blockquote className="citation marge-0">
                       <p className="t17 texte-libre">{dernierComplement.motif}</p>
-                      <p className="t13 muted" style={{ marginTop: 8 }}>
+                      <p className="t13 muted marge-haut-8">
                         {dateBreve(dernierComplement.decideeLe)}
                       </p>
                     </blockquote>
                   </div>
                 )}
               </div>
-              <div className="colonne" style={{ gridColumn: '10 / span 3', gap: 12 }}>
+              <div className="colonne fin-3 ecart-12">
                 <Link
                   className="btn btn-primaire btn-plein"
                   to={`/client/demandes/${demande.id}/completer`}
@@ -173,17 +167,16 @@ export function DetailDemande() {
 
         {/* Le plafond appliqué et le plafond demandé côte à côte : l'un n'entraîne pas l'autre. */}
         <section
-          className="coffre"
-          style={{ gridColumn: 'span 12', padding: '48px 56px 40px' }}
+          className="coffre span-12 coffre-large"
           aria-label="Plafond appliqué et plafond demandé"
         >
           <div className="coffre-haut">
-            <div className="colonne" style={{ gap: 12 }}>
+            <div className="colonne ecart-12">
               <p className="coffre-label">Plafond appliqué aujourd’hui par la banque</p>
               {compte ? (
                 <>
                   <GrandMontant montant={compte.plafondCourant} />
-                  <p style={{ marginTop: 8 }}>
+                  <p className="marge-haut-8">
                     {compte.plafondTemporaireActif ? (
                       <Etat ton="actif">Plafond temporaire actif</Etat>
                     ) : (
@@ -195,17 +188,14 @@ export function DetailDemande() {
                 <p className="montant-s">…</p>
               )}
             </div>
-            <div
-              className="coffre-encart colonne"
-              style={{ padding: 24, minWidth: 360, maxWidth: 420, gap: 8 }}
-            >
+            <div className="coffre-encart colonne encart-demande">
               <p className="coffre-label">Plafond demandé</p>
               {demande.plafondDemande === null ? (
                 <p className="montant-s">Non renseigné</p>
               ) : (
                 <GrandMontant montant={demande.plafondDemande} taille="s" />
               )}
-              <p style={{ marginTop: 4 }}>
+              <p className="marge-haut-4">
                 <Etat ton={libelle.ton} className="etat-long">
                   {libelle.texte}
                 </Etat>
@@ -214,7 +204,7 @@ export function DetailDemande() {
           </div>
 
           {compte && (
-            <div style={{ marginTop: 32 }}>
+            <div className="marge-haut-32">
               <Jauge
                 plafondInitial={compte.plafondInitial}
                 applique={compte.plafondCourant}
@@ -224,7 +214,7 @@ export function DetailDemande() {
             </div>
           )}
 
-          <div className="coffre-sep" style={{ margin: '32px 0' }} />
+          <div className="coffre-sep marge-v-32" />
           <dl className="faits faits-4">
             <div>
               <dt>Durée</dt>
@@ -262,23 +252,14 @@ export function DetailDemande() {
         </section>
 
         {['ANNULEE', 'ABANDONNEE'].includes(demande.statut) ? null : (
-          <section
-            className="panel"
-            style={{ gridColumn: 'span 12', padding: '32px 40px' }}
-            aria-label="Étapes de la demande"
-          >
+          <section className="panel span-12 interieur-large" aria-label="Étapes de la demande">
             <Frise demande={demande} />
           </section>
         )}
 
         {decisions.length > 0 && (
           <section
-            className="panel colonne"
-            style={{
-              gridColumn: revisions.length > 0 ? 'span 7' : 'span 12',
-              padding: 32,
-              marginTop: 16,
-            }}
+            className={`panel colonne interieur-32 marge-haut-16 ${revisions.length > 0 ? 'span-7' : 'span-12'}`}
             aria-labelledby="decisions-titre"
           >
             <h2 id="decisions-titre" className="h2">
@@ -286,25 +267,8 @@ export function DetailDemande() {
             </h2>
             <ul className="lignes">
               {[...decisions].reverse().map((d, i) => (
-                <li
-                  key={i}
-                  className="colonne"
-                  style={{
-                    gap: 8,
-                    padding: '24px 0',
-                    borderTop: i === 0 ? undefined : '1px solid #E9E6DF',
-                    paddingTop: i === 0 ? 0 : 24,
-                  }}
-                >
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'baseline',
-                      gap: 16,
-                      flexWrap: 'wrap',
-                    }}
-                  >
+                <li key={i} className="colonne entree ecart-8">
+                  <div className="entree-tete retour-ligne">
                     <Etat ton={d.type === 'REJET' ? 'refus' : 'neutre'}>
                       {LIBELLE_DECISION[d.type] ?? d.type}
                     </Etat>
@@ -312,12 +276,7 @@ export function DetailDemande() {
                       Sur la v{d.revisionNo}, le {dateBreve(d.decideeLe)}
                     </span>
                   </div>
-                  <p
-                    className="t15 texte-libre"
-                    style={{ padding: '12px 16px', borderRadius: 12, background: '#F7F5F1' }}
-                  >
-                    {d.motif}
-                  </p>
+                  <p className="t15 texte-libre motif-encadre">{d.motif}</p>
                 </li>
               ))}
             </ul>
@@ -326,54 +285,33 @@ export function DetailDemande() {
 
         {revisions.length > 0 && (
           <section
-            className="panel colonne"
-            style={{
-              gridColumn: decisions.length > 0 ? 'span 5' : 'span 12',
-              padding: 32,
-              marginTop: 16,
-            }}
+            className={`panel colonne interieur-32 marge-haut-16 ${decisions.length > 0 ? 'span-5' : 'span-12'}`}
             aria-labelledby="versions-titre"
           >
             <h2 id="versions-titre" className="h2">
               Versions soumises
             </h2>
-            <div className="colonne" style={{ gap: 0 }}>
-              {[...revisions].reverse().map((r, i) => (
-                <div
-                  key={r.revisionNo}
-                  className="colonne"
-                  style={{
-                    gap: 12,
-                    paddingTop: i === 0 ? 0 : 24,
-                    paddingBottom: 24,
-                    borderTop: i === 0 ? undefined : '1px solid #E3DFD7',
-                  }}
-                >
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'baseline',
-                      gap: 16,
-                    }}
-                  >
+            <div className="colonne ecart-0">
+              {[...revisions].reverse().map((r) => (
+                <div key={r.revisionNo} className="colonne entree entree-version ecart-12">
+                  <div className="entree-tete">
                     <span className="h3">v{r.revisionNo}</span>
                     <span className="t13 muted">Soumise le {dateBreve(r.soumiseLe)}</span>
                   </div>
                   <dl className="lignes t15">
-                    <div className="ligne" style={{ padding: '8px 0' }}>
+                    <div className="ligne ligne-compacte">
                       <dt className="ligne-cle">Plafond</dt>
                       <dd className="ligne-val">{enDirhams(r.plafondDemande)}</dd>
                     </div>
-                    <div className="ligne" style={{ padding: '8px 0' }}>
+                    <div className="ligne ligne-compacte">
                       <dt className="ligne-cle">Durée</dt>
                       <dd className="ligne-val">{duree(r.dureeJours)}</dd>
                     </div>
-                    <div className="ligne" style={{ padding: '8px 0' }}>
+                    <div className="ligne ligne-compacte">
                       <dt className="ligne-cle">Motif</dt>
                       <dd className="ligne-val texte-libre">{r.motif}</dd>
                     </div>
-                    <div className="ligne" style={{ padding: '8px 0' }}>
+                    <div className="ligne ligne-compacte">
                       <dt className="ligne-cle">Justificatif</dt>
                       <dd className="ligne-val">{r.justificatifNom ?? 'Aucun'}</dd>
                     </div>

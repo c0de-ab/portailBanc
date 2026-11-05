@@ -39,7 +39,7 @@ export function TableauDeBord() {
   return (
     <>
       <div className="entete">
-        <div className="colonne" style={{ gap: 4 }}>
+        <div className="colonne ecart-4">
           {comptes.length === 1 && <p className="surtitre">Compte {comptes[0].numero}</p>}
           <h1 className="h1">Mes plafonds de virement</h1>
         </div>
@@ -60,11 +60,8 @@ export function TableauDeBord() {
         })}
 
         {passees.length > 0 && (
-          <section
-            style={{ gridColumn: 'span 12', marginTop: 32 }}
-            aria-labelledby="precedentes-titre"
-          >
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 16, marginBottom: 16 }}>
+          <section className="span-12 marge-haut-32" aria-labelledby="precedentes-titre">
+            <div className="titre-file">
               <h2 id="precedentes-titre" className="h2">
                 Demandes précédentes
               </h2>
@@ -128,18 +125,14 @@ function Coffre({ compte, demande }: { compte: Compte; demande: Demande | null }
       ? demande.plafondDemande
       : null;
   return (
-    <section
-      className="coffre"
-      style={{ gridColumn: 'span 12', padding: '48px 56px 40px' }}
-      aria-labelledby={`plafond-${compte.id}`}
-    >
+    <section className="coffre span-12 coffre-large" aria-labelledby={`plafond-${compte.id}`}>
       <div className="coffre-haut">
-        <div className="colonne" style={{ gap: 12 }}>
+        <div className="colonne ecart-12">
           <p id={`plafond-${compte.id}`} className="coffre-label">
             Plafond appliqué
           </p>
           <GrandMontant montant={compte.plafondCourant} />
-          <p style={{ marginTop: 8 }}>
+          <p className="marge-haut-8">
             {compte.plafondTemporaireActif ? (
               <Etat ton="actif">Plafond temporaire actif</Etat>
             ) : (
@@ -147,7 +140,7 @@ function Coffre({ compte, demande }: { compte: Compte; demande: Demande | null }
             )}
           </p>
         </div>
-        <dl className="coffre-encart lignes" style={{ padding: '8px 24px', minWidth: 360 }}>
+        <dl className="coffre-encart lignes encart-compte">
           <div className="ligne">
             <dt className="ligne-cle">Plafond habituel</dt>
             <dd className="ligne-val">{enDirhams(compte.plafondInitial)}</dd>
@@ -167,7 +160,7 @@ function Coffre({ compte, demande }: { compte: Compte; demande: Demande | null }
           </div>
         </dl>
       </div>
-      <div style={{ marginTop: 32 }}>
+      <div className="marge-haut-32">
         <Jauge
           plafondInitial={compte.plafondInitial}
           applique={compte.plafondCourant}
@@ -182,13 +175,9 @@ function Coffre({ compte, demande }: { compte: Compte; demande: Demande | null }
 function DemandeEnCours({ compte, demande }: { compte: Compte; demande: Demande }) {
   const libelle = libelleClient(demande);
   return (
-    <section
-      className="panel"
-      style={{ gridColumn: 'span 8', alignSelf: 'stretch', padding: 32 }}
-      aria-labelledby={`demande-${demande.id}`}
-    >
+    <section className="panel span-8 etire interieur-32" aria-labelledby={`demande-${demande.id}`}>
       <div className="panel-tete">
-        <div className="colonne" style={{ gap: 4 }}>
+        <div className="colonne ecart-4">
           <p className="surtitre">Demande en cours</p>
           <h2 id={`demande-${demande.id}`} className="h2 ref">
             {demande.reference ?? 'Brouillon'}
@@ -215,11 +204,11 @@ function DemandeEnCours({ compte, demande }: { compte: Compte; demande: Demande 
         )}
       </div>
 
-      <div style={{ marginTop: 32 }}>
+      <div className="marge-haut-32">
         <Frise demande={demande} />
       </div>
 
-      <div style={{ marginTop: 32 }}>
+      <div className="marge-haut-32">
         <EncartEtat ton={libelle.ton}>{libelle.texte}</EncartEtat>
       </div>
     </section>
@@ -229,16 +218,15 @@ function DemandeEnCours({ compte, demande }: { compte: Compte; demande: Demande 
 function SansDemande({ compte }: { compte: Compte }) {
   return (
     <section
-      className="panel colonne"
-      style={{ gridColumn: 'span 8', alignSelf: 'stretch', padding: 32 }}
+      className="panel colonne span-8 etire interieur-32"
       aria-labelledby={`aucune-${compte.id}`}
     >
-      <div className="colonne" style={{ gap: 8 }}>
+      <div className="colonne ecart-8">
         <p className="surtitre">Demande en cours</p>
         <h2 id={`aucune-${compte.id}`} className="h2">
           Aucune demande en cours
         </h2>
-        <p className="muted" style={{ maxWidth: 520 }}>
+        <p className="muted largeur-520">
           Vous pouvez augmenter temporairement votre plafond, de 1 à 7 jours et jusqu’à 100 000 DH.
         </p>
       </div>
@@ -262,11 +250,7 @@ function SansDemande({ compte }: { compte: Compte }) {
           <span className="t13 muted">Le plafond est actif une fois appliqué par la banque.</span>
         </div>
       </div>
-      <Link
-        className="btn btn-primaire"
-        to={`/client/comptes/${compte.id}/brouillon`}
-        style={{ alignSelf: 'flex-start' }}
-      >
+      <Link className="btn btn-primaire aligne-debut" to={`/client/comptes/${compte.id}/brouillon`}>
         Demander une augmentation temporaire
       </Link>
     </section>
@@ -284,11 +268,7 @@ const QUESTIONS_AVEC_DEMANDE = ['Où en est ma demande ?', 'Quel est mon plafond
 function AideAssistant({ sansDemande }: { sansDemande: boolean }) {
   const questions = sansDemande ? QUESTIONS_SANS_DEMANDE : QUESTIONS_AVEC_DEMANDE;
   return (
-    <aside
-      className="panel colonne"
-      style={{ gridColumn: 'span 4', alignSelf: 'stretch', padding: 32, gap: 12 }}
-      aria-label="Assistant"
-    >
+    <aside className="panel colonne span-4 etire interieur-32 ecart-12" aria-label="Assistant">
       <p className="surtitre">Assistant</p>
       <h2 className="h3">
         {sansDemande
@@ -298,18 +278,14 @@ function AideAssistant({ sansDemande }: { sansDemande: boolean }) {
       <p className="muted">
         L’assistant vous aide à préparer une demande. Il ne soumet ni ne décide jamais.
       </p>
-      <div className="suggestions" style={{ marginTop: 8 }} aria-label="Questions fréquentes">
+      <div className="suggestions marge-haut-8" aria-label="Questions fréquentes">
         {questions.map((question) => (
           <Link key={question} className="suggestion" to="/client/assistant" state={{ question }}>
             {question}
           </Link>
         ))}
       </div>
-      <Link
-        className="lien"
-        to="/client/assistant"
-        style={{ marginTop: 'auto', alignSelf: 'flex-start' }}
-      >
+      <Link className="lien marge-haut-auto aligne-debut" to="/client/assistant">
         Demander à l’assistant
       </Link>
     </aside>

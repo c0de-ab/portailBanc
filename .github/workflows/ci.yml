@@ -61,6 +61,7 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npx tsc --noEmit
+      - run: npm run test
       - run: npm run build
 
   docker:

@@ -36,6 +36,7 @@ Le projet repose sur une stack **simple, cohérente et entièrement en TypeScrip
 | **Traçabilité** | Table `events` | Acteur, action, date, référence, version et motif ; appels d'outils et refus sensibles ; ni secrets, ni conversations complètes. |
 | | Logger NestJS | Journaux techniques. |
 | **Tests** | Jest + Supertest (fournis par NestJS) | Tests unitaires des règles et des transitions ; tests d'API sur une base PostgreSQL de test lancée par Docker Compose, y compris la concurrence. La base de test est créée au premier lancement du conteneur `db` par un script d'initialisation (`docker-entrypoint-initdb.d`). |
+| | Vitest (frontend) | Tests unitaires des fonctions d'affichage qui reprennent une notion métier : libellés des états (décision favorable ou plafond actif), frise, files « À traiter » et « Activation à reprendre ». Même configuration que Vite, sans navigateur. |
 | | Procédure de recette | Les 7 scénarios du cahier, décrits pas à pas dans le README. |
 | **Qualité** | ESLint + Prettier | Code homogène et lisible. |
 | | Conventional Commits, petits commits directement sur `main` | Historique Git lisible ; les tests sont lancés avant chaque push, et la CI vérifie chaque push pour que `main` reste toujours fonctionnelle. |

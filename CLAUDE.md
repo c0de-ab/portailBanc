@@ -19,7 +19,7 @@ Si le code et un document se contredisent, **s'arrêter et le signaler** : ne ja
 
 ## Stack
 
-TypeScript strict · Node.js 24 · NestJS (`api/`) · React + Vite (`web/`) · PostgreSQL 16 · SQL brut avec le pilote `pg` · migrations SQL numérotées · `class-validator` · Jest + Supertest · API Groq (mode connecté, appelée par `fetch`) derrière l'interface `LlmClient` · Docker Compose · GitHub Actions.
+TypeScript strict · Node.js 24 · NestJS (`api/`) · React + Vite (`web/`) · PostgreSQL 16 · SQL brut avec le pilote `pg` · migrations SQL numérotées · `class-validator` · Jest + Supertest (API) · Vitest (frontend) · API Groq (mode connecté, appelée par `fetch`) derrière l'interface `LlmClient` · Docker Compose · GitHub Actions.
 
 ## Structure cible
 
@@ -67,6 +67,7 @@ Dans `api/` :
 Dans `web/` :
 - `npm run dev` : frontend en développement sur le port 5173 (Vite redirige `/api` vers le backend)
 - `npm run build` : frontend construit dans `web/dist`, servi par l'API
+- `npm run test` : tests unitaires (Vitest) des fonctions d'affichage qui reprennent une notion métier : libellés des états, frise, files de la banque. Sans base ni navigateur
 - `npm run lint` : ESLint et Prettier ; `npm run format` corrige la mise en forme
 
 Dans l'image Docker de production, les outils de développement (`ts-node`, `tsx`) sont absents. Les scripts lancés dans le conteneur (migrations, seed, expiration) utilisent donc le **code compilé** (`node dist/...`), et les fichiers de `api/migrations/` sont copiés dans l'image. Vérifier chacune de ces commandes **dans le conteneur** dès l'étape du squelette.
@@ -77,7 +78,7 @@ Dans l'image Docker de production, les outils de développement (`ts-node`, `tsx
 - Job `api` : `npm ci`, lint, vérification des types (`tsc --noEmit`), compilation (`npm run build`), migrations (`npm run migrate`, sur le code compilé), puis `npm run test`.
 - Base de test : un service PostgreSQL 16 qui crée directement `portail_test`, avec un contrôle de santé (`pg_isready`), pour que les migrations ne démarrent pas avant que la base soit prête.
 - Aucun fichier `.env` n'est lu dans la CI : `DATABASE_URL` est défini directement dans le workflow, avec la même valeur que `api/.env.test`. En local, `npm run test` charge explicitement `api/.env.test` ; la base de test est créée par un script d'initialisation de PostgreSQL dans Docker Compose.
-- Job `web` : `npm ci`, lint, vérification des types et `npm run build`.
+- Job `web` : `npm ci`, lint, vérification des types, `npm run test` et `npm run build`.
 - Job `docker` : `docker build`, pour détecter au plus tôt un Dockerfile cassé.
 - Aucun secret n'est nécessaire : l'IA tourne en mode simulé (`LLM_MODE=mock`).
 - Si la CI échoue, corriger avant de continuer.

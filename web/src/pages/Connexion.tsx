@@ -3,6 +3,7 @@ import { Navigate, useNavigate } from 'react-router';
 import { ErreurApi } from '../api';
 import { useSession } from '../session';
 
+// Page d'accueil : le coffre occupe tout l'écran, le formulaire est au centre.
 export function Connexion() {
   const { utilisateur, connecter } = useSession();
   const naviguer = useNavigate();
@@ -31,36 +32,52 @@ export function Connexion() {
   }
 
   return (
-    <main className="page page-connexion">
-      <h1>Portail bancaire</h1>
-      <p className="chapeau">Connectez-vous pour suivre vos plafonds de virement.</p>
-      <form onSubmit={envoyer} className="formulaire">
-        <label>
-          Adresse e-mail
+    <main className="coffre coffre-connexion">
+      <p className="marque connexion-marque">Portail bancaire</p>
+
+      <form className="panel connexion-carte" onSubmit={envoyer}>
+        <h1 className="h1" style={{ textAlign: 'center', marginBottom: 8 }}>
+          Connexion
+        </h1>
+        <div className="champ">
+          <label className="etiquette" htmlFor="connexion-email">
+            Adresse e-mail
+          </label>
           <input
+            id="connexion-email"
+            className="saisie"
             type="email"
             autoComplete="username"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
-        </label>
-        <label>
-          Mot de passe
+        </div>
+        <div className="champ">
+          <label className="etiquette" htmlFor="connexion-mdp">
+            Mot de passe
+          </label>
           <input
+            id="connexion-mdp"
+            className="saisie"
             type="password"
             autoComplete="current-password"
             required
             value={motDePasse}
             onChange={(e) => setMotDePasse(e.target.value)}
           />
-        </label>
+        </div>
         {erreur && (
           <p className="message message-erreur" role="alert">
             {erreur}
           </p>
         )}
-        <button type="submit" className="bouton" disabled={envoi}>
+        <button
+          type="submit"
+          className="btn btn-primaire btn-plein"
+          disabled={envoi}
+          style={{ marginTop: 8, height: 52 }}
+        >
           {envoi ? 'Connexion…' : 'Se connecter'}
         </button>
       </form>

@@ -80,6 +80,9 @@ export const SEUIL_JUSTIFICATIF = 50_000;
 
 export const enDirhams = (montant: number) => `${montant.toLocaleString('fr-FR')} DH`;
 
+export const dateCourte = (iso: string) =>
+  new Date(iso).toLocaleDateString('fr-FR', { dateStyle: 'long' });
+
 export const dateLisible = (iso: string) =>
   new Date(iso).toLocaleString('fr-FR', { dateStyle: 'long', timeStyle: 'short' });
 
@@ -219,7 +222,7 @@ export function libelleDossier(d: Dossier): { texte: string; ton: Ton } {
       return {
         texte: `${texte}, activation ${LIBELLE_EXECUTION[d.activationStatut ?? 'EN_ATTENTE']}`,
         ton:
-          d.activationStatut === 'ECHEC' || d.activationStatut === 'INCONNU' ? 'refus' : 'attente',
+          d.activationStatut === 'ECHEC' || d.activationStatut === 'INCONNU' ? 'action' : 'attente',
       };
     case 'ACTIVE':
       return { texte, ton: 'actif' };
@@ -231,3 +234,50 @@ export function libelleDossier(d: Dossier): { texte: string; ton: Ton } {
       return { texte, ton: 'termine' };
   }
 }
+
+// Date brève, pour la frise et les tableaux : « 4 nov. 2026 à 22:07 ».
+export const dateBreve = (iso: string) =>
+  new Date(iso).toLocaleString('fr-FR', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+// Le rôle affiché dans la barre : copie de la session, sans autre donnée.
+export function libelleRole(roles: Role[]): string {
+  if (roles.includes('CLIENT')) {
+    return 'Client';
+  }
+  if (roles.includes('CONSEILLER') && roles.includes('SUPERVISEUR')) {
+    return 'Conseiller et superviseur';
+  }
+  return roles.includes('SUPERVISEUR') ? 'Superviseur' : 'Conseiller';
+}
+
+// L'historique d'un dossier : les codes d'événement de l'API, traduits pour l'affichage.
+// Un code inconnu est affiché tel quel.
+export const LIBELLE_EVENEMENT: Record<string, string> = {
+  BROUILLON_CREE: 'Brouillon créé',
+  MODIFICATION: 'Brouillon modifié',
+  JUSTIFICATIF_DEPOSE: 'Justificatif déposé',
+  SOUMISSION: 'Demande soumise',
+  ANNULATION: 'Demande annulée',
+  ABANDON: 'Brouillon abandonné',
+  DEMANDE_COMPLEMENT: 'Complément demandé',
+  RECOMMANDATION: 'Recommandation transmise au superviseur',
+  RECOMMANDATION_FAVORABLE: 'Recommandation favorable, transmise au superviseur',
+  RECOMMANDATION_DEFAVORABLE: 'Recommandation défavorable, transmise au superviseur',
+  APPROBATION: 'Demande approuvée',
+  REJET: 'Demande rejetée',
+  ACTIVATION_REUSSIE: 'Plafond activé par la banque',
+  ACTIVATION_ECHEC: 'Activation refusée par la banque',
+  ACTIVATION_INCONNUE: 'Activation sans réponse de la banque',
+  RELANCE: 'Activation relancée',
+  EXPIRATION: 'Plafond temporaire expiré',
+  DESACTIVATION_ECHEC: 'Désactivation refusée par la banque',
+  DESACTIVATION_INCONNUE: 'Désactivation sans réponse de la banque',
+  AGENT_OUTIL: 'Outil de l’assistant utilisé',
+  REFUS: 'Action refusée par le serveur',
+};

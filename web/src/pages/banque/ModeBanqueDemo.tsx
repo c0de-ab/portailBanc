@@ -29,22 +29,29 @@ export function ModeBanqueDemo() {
   }
 
   return (
-    <div className="mode-banque">
-      <label>
+    <fieldset className="mode-banque">
+      <legend className="t13 muted" style={{ fontWeight: 500, marginBottom: 8 }}>
         Banque simulée (démonstration)
-        <select value={mode} onChange={(e) => void changer(e.target.value as ModeBanque)}>
-          {(Object.keys(LIBELLE_MODE_BANQUE) as ModeBanque[]).map((m) => (
-            <option key={m} value={m}>
-              {LIBELLE_MODE_BANQUE[m]}
-            </option>
-          ))}
-        </select>
-      </label>
-      <p className="discret">
+      </legend>
+      <div className="segment">
+        {(Object.keys(LIBELLE_MODE_BANQUE) as ModeBanque[]).map((m) => (
+          <label key={m} className="segment-opt">
+            <input
+              type="radio"
+              name="mode-banque"
+              value={m}
+              checked={mode === m}
+              onChange={() => void changer(m)}
+            />
+            <span>{LIBELLE_MODE_BANQUE[m]}</span>
+          </label>
+        ))}
+      </div>
+      <p className="aide" style={{ marginTop: 8, maxWidth: 420 }}>
         Ce mode s’applique aux nouvelles opérations ; une opération déjà connue de la banque renvoie
         toujours son résultat enregistré.
       </p>
       {erreur && <p className="message message-erreur">{erreur}</p>}
-    </div>
+    </fieldset>
   );
 }

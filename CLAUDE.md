@@ -122,7 +122,6 @@ Dans l'image Docker de production, les outils de développement (`ts-node`, `tsx
 - Si un outil échoue ou qu'une donnée manque, l'agent le dit et ne prétend jamais avoir agi.
 - `LLM_MODE=mock` par défaut partout (Docker, développement, tests). Les tests ne font jamais d'appel réseau au modèle. Le mode simulé répond de façon déterministe, par correspondance de motifs, et couvre au minimum le parcours normal, le brouillon de 60 000 DH sans justificatif (avertissement R4, scénario 2), la demande de contournement et l'accès à un autre compte (scénario 7).
 - **Modèle piégé :** une troisième implémentation de `LlmClient`, réservée aux tests (dans `api/test/`, jamais dans `src/`). Elle obéit à l'attaquant et appelle les outils avec des arguments malveillants.
-- Facultatif, en fin de projet : `npm run eval:agent` envoie les mêmes messages d'attaque au vrai modèle et produit un rapport. Ce n'est pas un test : elle n'est **jamais lancée dans la CI**, car elle demande une clé, coûte de l'argent et n'est pas déterministe.
 - Garde-fous : 15 s par appel, 3 appels d'outils par message, 1 024 tokens de réponse. Si le modèle est indisponible, le chat l'indique et les formulaires restent utilisables.
 
 ## Sécurité

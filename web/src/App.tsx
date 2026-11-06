@@ -1,81 +1,85 @@
-import type { ReactNode } from 'react';
-import { BrowserRouter, Link, Navigate, Route, Routes, useLocation } from 'react-router';
+import { useEffect, type ReactNode } from 'react';
+import { BrowserRouter, Link, Navigate, Route, Routes } from 'react-router';
 import { Connexion } from './pages/Connexion';
 import { DetailDossier } from './pages/banque/DetailDossier';
 import { ListeDossiers } from './pages/banque/ListeDossiers';
-import { Assistant } from './pages/client/Assistant';
 import { DetailDemande } from './pages/client/DetailDemande';
 import { FormulaireDemande } from './pages/client/FormulaireDemande';
+import { PanneauAssistant } from './pages/client/PanneauAssistant';
 import { TableauDeBord } from './pages/client/TableauDeBord';
+import { FournisseurAssistant, useAssistant } from './assistant';
 import { FournisseurSession, useSession } from './session';
 import { libelleRole, type Role } from './types';
 
 export function App() {
   return (
     <FournisseurSession>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/connexion" element={<Connexion />} />
-          <Route path="/" element={<Accueil />} />
-          <Route
-            path="/client"
-            element={
-              <Protege role="CLIENT">
-                <TableauDeBord />
-              </Protege>
-            }
-          />
-          <Route
-            path="/client/assistant"
-            element={
-              <Protege role="CLIENT">
-                <Assistant />
-              </Protege>
-            }
-          />
-          <Route
-            path="/client/comptes/:compteId/brouillon"
-            element={
-              <Protege role="CLIENT">
-                <FormulaireDemande />
-              </Protege>
-            }
-          />
-          <Route
-            path="/client/demandes/:id/completer"
-            element={
-              <Protege role="CLIENT">
-                <FormulaireDemande />
-              </Protege>
-            }
-          />
-          <Route
-            path="/client/demandes/:id"
-            element={
-              <Protege role="CLIENT">
-                <DetailDemande />
-              </Protege>
-            }
-          />
-          <Route
-            path="/banque"
-            element={
-              <Protege role="CONSEILLER">
-                <ListeDossiers />
-              </Protege>
-            }
-          />
-          <Route
-            path="/banque/dossiers/:id"
-            element={
-              <Protege role="CONSEILLER">
-                <DetailDossier />
-              </Protege>
-            }
-          />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </BrowserRouter>
+      <FournisseurAssistant>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/connexion" element={<Connexion />} />
+            <Route path="/" element={<Accueil />} />
+            <Route
+              path="/client"
+              element={
+                <Protege role="CLIENT">
+                  <TableauDeBord />
+                </Protege>
+              }
+            />
+            {/* L'ancienne adresse de l'assistant ouvre le panneau sur « Mes plafonds ». */}
+            <Route
+              path="/client/assistant"
+              element={
+                <Protege role="CLIENT">
+                  <OuvrirAssistant />
+                </Protege>
+              }
+            />
+            <Route
+              path="/client/comptes/:compteId/brouillon"
+              element={
+                <Protege role="CLIENT">
+                  <FormulaireDemande />
+                </Protege>
+              }
+            />
+            <Route
+              path="/client/demandes/:id/completer"
+              element={
+                <Protege role="CLIENT">
+                  <FormulaireDemande />
+                </Protege>
+              }
+            />
+            <Route
+              path="/client/demandes/:id"
+              element={
+                <Protege role="CLIENT">
+                  <DetailDemande />
+                </Protege>
+              }
+            />
+            <Route
+              path="/banque"
+              element={
+                <Protege role="CONSEILLER">
+                  <ListeDossiers />
+                </Protege>
+              }
+            />
+            <Route
+              path="/banque/dossiers/:id"
+              element={
+                <Protege role="CONSEILLER">
+                  <DetailDossier />
+                </Protege>
+              }
+            />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </BrowserRouter>
+      </FournisseurAssistant>
     </FournisseurSession>
   );
 }
@@ -90,6 +94,12 @@ function Accueil() {
     return <Navigate to="/connexion" replace />;
   }
   return <Navigate to={utilisateur.roles.includes('CLIENT') ? '/client' : '/banque'} replace />;
+}
+
+function OuvrirAssistant() {
+  const { ouvrir } = useAssistant();
+  useEffect(() => ouvrir(), [ouvrir]);
+  return <Navigate to="/client" replace />;
 }
 
 function Protege({ role, children }: { role: Role; children: ReactNode }) {
@@ -146,22 +156,38 @@ const ICONE_DOSSIERS = (
   </svg>
 );
 
+// Le raccourci qui ouvre ou masque l'assistant, affiché sur le bouton flottant.
+const RACCOURCI = /Mac|iPhone|iPad/.test(navigator.userAgent) ? '⌘ K' : 'Ctrl K';
+
 function Cadre({ children }: { children: ReactNode }) {
   const { utilisateur, deconnecter } = useSession();
-  const { pathname } = useLocation();
+  const assistant = useAssistant();
+  const { basculer } = assistant;
   const roles = utilisateur?.roles ?? [];
   const client = roles.includes('CLIENT');
-  // Le lien actif porte aria-current="page", que la feuille de style met en valeur.
-  // « Mes plafonds » couvre tout l'espace client (formulaire, détail), sauf l'assistant.
-  const assistant = pathname.startsWith('/client/assistant');
-  const actif = (oui: boolean) => (oui ? ('page' as const) : undefined);
+
+  // Ctrl K (⌘ K sur Mac) ouvre ou masque l'assistant, depuis n'importe quelle page client.
+  useEffect(() => {
+    if (!client) {
+      return;
+    }
+    const touche = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        basculer();
+      }
+    };
+    window.addEventListener('keydown', touche);
+    return () => window.removeEventListener('keydown', touche);
+  }, [client, basculer]);
+
   const espace = client
     ? 'Espace client'
     : roles.includes('SUPERVISEUR') && !roles.includes('CONSEILLER')
       ? 'Espace superviseur'
       : 'Espace conseiller';
   return (
-    <div className="shell">
+    <div className={client && assistant.ouvert ? 'shell avec-assistant' : 'shell'}>
       <aside className="rail" aria-label="Menu">
         <div className="rail-marque">
           <Link to="/" className="marque">
@@ -172,14 +198,22 @@ function Cadre({ children }: { children: ReactNode }) {
         <nav className="rail-nav" aria-label="Navigation principale">
           {client ? (
             <>
-              <Link to="/client" className="rail-lien" aria-current={actif(!assistant)}>
+              {/* « Mes plafonds » couvre tout l'espace client : tableau de bord, formulaire, détail. */}
+              <Link to="/client" className="rail-lien" aria-current="page">
                 {ICONE_PLAFONDS}
                 Mes plafonds
               </Link>
-              <Link to="/client/assistant" className="rail-lien" aria-current={actif(assistant)}>
+              {/* L'assistant s'ouvre à côté de la page en cours, sans la quitter. */}
+              <button
+                type="button"
+                className="rail-lien"
+                aria-expanded={assistant.ouvert}
+                aria-controls="panneau-assistant"
+                onClick={basculer}
+              >
                 {ICONE_ASSISTANT}
                 Assistant
-              </Link>
+              </button>
             </>
           ) : (
             <Link to="/banque" className="rail-lien" aria-current="page">
@@ -205,8 +239,29 @@ function Cadre({ children }: { children: ReactNode }) {
             Se déconnecter
           </button>
         </header>
-        <main className="contenu">{children}</main>
+        {/* Quand l'assistant a modifié une demande, la clé change : la page est rechargée et
+            montre l'état réel. */}
+        <main className="contenu" key={assistant.versionDonnees}>
+          {children}
+        </main>
       </div>
+      {client && <PanneauAssistant />}
+      {/* Le bouton flottant reste à portée, en haut comme en bas de la page. */}
+      {/* Masqué, et non retiré, quand le panneau est ouvert : il reprend le focus à la fermeture. */}
+      {client && (
+        <button
+          type="button"
+          className="lanceur-assistant"
+          aria-controls="panneau-assistant"
+          aria-expanded={assistant.ouvert}
+          hidden={assistant.ouvert}
+          onClick={() => assistant.ouvrir()}
+        >
+          {ICONE_ASSISTANT}
+          Assistant
+          <kbd>{RACCOURCI}</kbd>
+        </button>
+      )}
     </div>
   );
 }

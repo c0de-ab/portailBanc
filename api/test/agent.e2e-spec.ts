@@ -237,6 +237,22 @@ describe('Agent IA (mode simulé)', () => {
       await http().post('/api/auth/deconnexion').set('Cookie', amal);
       expect(await nombre('SELECT 1 FROM session')).toBe(0);
     });
+
+    it('« Effacer la conversation » retire la mémoire de la session, sans déconnecter', async () => {
+      const amal = await appTest.connecter(AMAL);
+      await envoyer(amal, 'Quel est mon plafond ?');
+      const memoire = async () =>
+        (await pool.query<{ sess: { conversation?: unknown[] } }>('SELECT sess FROM session'))
+          .rows[0].sess.conversation;
+      expect(await memoire()).toHaveLength(4); // message, appel d'outil, résultat, réponse
+
+      const reponse = await http().delete('/api/agent/conversation').set('Cookie', amal);
+
+      expect(reponse.status).toBe(204);
+      expect(await memoire()).toBeUndefined();
+      // La session reste ouverte : le client peut continuer à écrire.
+      expect(types(await envoyer(amal, 'Quel est mon plafond ?'))).toContain('donnee');
+    });
   });
 
   it('le chat est réservé au client (403 pour le personnel)', async () => {
@@ -248,6 +264,8 @@ describe('Agent IA (mode simulé)', () => {
       .send({ message: 'Bonjour' });
 
     expect(reponse.status).toBe(403);
+    const effacement = await http().delete('/api/agent/conversation').set('Cookie', karim);
+    expect(effacement.status).toBe(403);
   });
 });
 

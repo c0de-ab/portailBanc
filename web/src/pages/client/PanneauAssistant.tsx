@@ -1,6 +1,8 @@
-import { useState, type FormEvent } from 'react';
-import { Link, useLocation } from 'react-router';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { Link } from 'react-router';
 import { api, ErreurApi } from '../../api';
+import { useAssistant } from '../../assistant';
+import { useSession } from '../../session';
 import {
   enDirhams,
   libelleClient,
@@ -12,17 +14,13 @@ import {
 } from '../../types';
 import { Etat, GrandMontant, ListeErreurs } from '../../composants';
 
-// Le chat du client avec l'agent. Trois natures de message, présentées différemment :
+// Le chat du client avec l'agent, dans un panneau ouvert à côté de la page en cours. Trois
+// natures de message, présentées différemment :
 // - donnée du système : le résultat d'un outil, lu en base par le serveur ;
 // - explication : le texte du modèle, NON FIABLE (il peut être influencé par un message) ;
 // - action réalisée : ce que le serveur a effectivement fait.
 // Tout est affiché comme du texte, jamais comme du HTML. L'agent ne soumet jamais : seule la
 // carte de confirmation, cliquée par le client, appelle la route de soumission (R7).
-
-type Echange =
-  | { de: 'client'; texte: string }
-  | { de: 'agent'; elements: ElementAgent[] }
-  | { de: 'indisponible'; texte: string };
 
 const EXEMPLES = [
   'Quel est mon plafond actuel ?',
@@ -30,198 +28,234 @@ const EXEMPLES = [
   'Où en est ma demande ?',
 ];
 
-export function Assistant() {
-  // Une question choisie sur le tableau de bord arrive déjà saisie ; le client l'envoie lui-même.
-  const questionProposee = (useLocation().state as { question?: string } | null)?.question ?? '';
-  const [echanges, setEchanges] = useState<Echange[]>([]);
-  const [message, setMessage] = useState(questionProposee);
-  const [envoi, setEnvoi] = useState(false);
+export function PanneauAssistant() {
+  const { ouvert, fermer, effacer, echanges, envoi, message, setMessage, envoyer } = useAssistant();
+  const initiale = useSession().utilisateur?.displayName.charAt(0) ?? '';
+  const saisie = useRef<HTMLTextAreaElement>(null);
+  const fil = useRef<HTMLOListElement>(null);
 
-  async function envoyer(texte: string) {
-    const propre = texte.trim();
-    if (propre === '' || envoi) {
+  // À l'ouverture, le curseur va dans le champ de saisie.
+  useEffect(() => {
+    if (ouvert) {
+      saisie.current?.focus();
+    }
+  }, [ouvert]);
+
+  // La touche Échap ferme le panneau.
+  useEffect(() => {
+    if (!ouvert) {
       return;
     }
-    setEchanges((e) => [...e, { de: 'client', texte: propre }]);
-    setMessage('');
-    setEnvoi(true);
-    try {
-      const { elements } = await api.envoyerMessage(propre);
-      setEchanges((e) => [...e, { de: 'agent', elements }]);
-    } catch (e) {
-      const texteErreur =
-        e instanceof ErreurApi && e.statut === 503
-          ? 'L’assistant est indisponible pour le moment. Vous pouvez faire votre demande avec le formulaire, qui reste utilisable.'
-          : e instanceof ErreurApi
-            ? e.message
-            : 'Le serveur est injoignable.';
-      setEchanges((x) => [...x, { de: 'indisponible', texte: texteErreur }]);
-    } finally {
-      setEnvoi(false);
+    const touche = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        fermer();
+      }
+    };
+    window.addEventListener('keydown', touche);
+    return () => window.removeEventListener('keydown', touche);
+  }, [ouvert, fermer]);
+
+  // Le dernier message reste visible.
+  useEffect(() => {
+    if (fil.current) {
+      fil.current.scrollTop = fil.current.scrollHeight;
     }
-  }
+  }, [echanges, envoi, ouvert]);
 
   function soumettreFormulaire(evenement: FormEvent) {
     evenement.preventDefault();
     void envoyer(message);
   }
 
+  // Fermé, le panneau est masqué mais reste en place : les cartes déjà confirmées gardent leur état.
   return (
-    <>
-      <div className="entete">
-        <div className="colonne ecart-8">
-          <h1 className="h1">Assistant</h1>
-          <p className="muted">
-            L’assistant consulte vos comptes et prépare un brouillon. Il ne soumet jamais rien :
-            vous confirmez vous-même, et votre conseiller décide.
-          </p>
+    <aside
+      id="panneau-assistant"
+      className="panneau-assistant"
+      aria-labelledby="assistant-titre"
+      hidden={!ouvert}
+    >
+      <header className="panneau-entete">
+        <h2 id="assistant-titre" className="h3">
+          Assistant
+        </h2>
+        <div className="rangee ecart-8">
+          {echanges.length > 0 && (
+            <button
+              type="button"
+              className="btn btn-secondaire panneau-effacer"
+              disabled={envoi}
+              onClick={() => void effacer().then(() => saisie.current?.focus())}
+            >
+              Effacer la conversation
+            </button>
+          )}
+          <button
+            type="button"
+            className="panneau-masquer"
+            aria-label="Masquer l’assistant"
+            title="Masquer l’assistant (Ctrl K)"
+            onClick={fermer}
+          >
+            {ICONE_PANNEAU}
+          </button>
         </div>
-      </div>
+      </header>
 
-      <div className="g12">
-        <section className="panel conversation span-8" aria-label="Conversation avec l’assistant">
-          <ol className="fil-messages interieur-large" aria-live="polite">
-            {echanges.length === 0 && (
-              <li className="muted">Posez votre question, ou choisissez une suggestion.</li>
-            )}
-            {echanges.map((echange, i) => (
-              <li key={i} className="fil-messages">
-                {echange.de === 'client' && (
-                  <div className="msg-client">
-                    <p className="msg-entete">Vous</p>
-                    <div className="bulle-msg texte-libre">{echange.texte}</div>
-                  </div>
-                )}
-                {echange.de === 'indisponible' && (
-                  <div className="bandeau-neutre barre-actions bandeau-indisponible" role="status">
-                    <div className="indisponible-texte">
-                      <span className="point point-neutre marge-haut-8" />
-                      <p className="t17 poids-500">{echange.texte}</p>
-                    </div>
-                    <Link className="btn btn-primaire" to="/client">
-                      Revenir à mes plafonds
-                    </Link>
-                  </div>
-                )}
-                {echange.de === 'agent' &&
-                  echange.elements.map((element, j) => <Element key={j} element={element} />)}
-              </li>
-            ))}
-            {envoi && <li className="muted">L’assistant répond…</li>}
-          </ol>
+      <details className="reperes">
+        <summary>Lire les messages</summary>
+        <ul className="colonne ecart-0">
+          <li className="specimen">
+            <span className="echantillon echantillon-client" aria-hidden="true" />
+            <span>
+              <span className="specimen-nom">Vous</span>
+              <span className="t13 muted">Vos messages.</span>
+            </span>
+          </li>
+          <li className="specimen">
+            <span className="echantillon echantillon-donnee" aria-hidden="true">
+              <span className="echantillon-donnee-entete" />
+            </span>
+            <span>
+              <span className="specimen-nom">Donnée du système</span>
+              <span className="t13 muted">Lue en base. Elle fait foi.</span>
+            </span>
+          </li>
+          <li className="specimen">
+            <span className="echantillon echantillon-ia" aria-hidden="true" />
+            <span>
+              <span className="specimen-nom">Réponse de l’assistant, à vérifier</span>
+              <span className="t13 muted">Texte rédigé par le modèle. Il peut se tromper.</span>
+            </span>
+          </li>
+          <li className="specimen">
+            <span className="echantillon echantillon-action" aria-hidden="true">
+              <span className="echantillon-trait" />
+              <span className="coche">{COCHE_ENCRE}</span>
+              <span className="echantillon-trait" />
+            </span>
+            <span>
+              <span className="specimen-nom">Action réalisée</span>
+              <span className="t13 muted">Ce que le système vient de faire.</span>
+            </span>
+          </li>
+          <li className="specimen">
+            <span className="echantillon echantillon-carte" aria-hidden="true">
+              <span className="point point-carte" />
+            </span>
+            <span>
+              <span className="specimen-nom">À confirmer par vous</span>
+              <span className="t13 muted">Rien n’est soumis sans votre clic.</span>
+            </span>
+          </li>
+        </ul>
+      </details>
 
-          <div className="colonne zone-saisie">
-            {echanges.length === 0 && (
-              <div className="suggestions" role="group" aria-label="Suggestions de questions">
-                {EXEMPLES.map((exemple) => (
-                  <button
-                    key={exemple}
-                    type="button"
-                    className="suggestion"
-                    onClick={() => void envoyer(exemple)}
-                  >
-                    {exemple}
-                  </button>
-                ))}
-              </div>
-            )}
-            <form className="composer" onSubmit={soumettreFormulaire}>
-              <div className="champ extensible">
-                <label className="etiquette" htmlFor="message">
-                  Votre message
-                </label>
-                <textarea
-                  id="message"
-                  className="saisie saisie-message"
-                  rows={2}
-                  maxLength={2000}
-                  placeholder="Posez votre question"
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      void envoyer(message);
-                    }
-                  }}
-                />
-              </div>
-              <button
-                type="submit"
-                className="btn btn-primaire"
-                disabled={envoi || message.trim() === ''}
-              >
-                Envoyer
-              </button>
-            </form>
-          </div>
-        </section>
-
-        <aside className="colonne span-4" aria-labelledby="legende-titre">
-          <section className="panel interieur-32">
-            <p className="surtitre">Repères</p>
-            <h2 id="legende-titre" className="h3 titre-reperes">
-              Lire les messages
-            </h2>
-            <ul className="colonne ecart-0">
-              <li className="specimen">
-                <span className="echantillon echantillon-client" aria-hidden="true" />
-                <span>
-                  <span className="specimen-nom">Vous</span>
-                  <span className="t13 muted">Vos messages.</span>
-                </span>
-              </li>
-              <li className="specimen">
-                <span className="echantillon echantillon-donnee" aria-hidden="true">
-                  <span className="echantillon-donnee-entete" />
-                </span>
-                <span>
-                  <span className="specimen-nom">Donnée du système</span>
-                  <span className="t13 muted">Lue en base. Elle fait foi.</span>
-                </span>
-              </li>
-              <li className="specimen">
-                <span className="echantillon echantillon-ia" aria-hidden="true" />
-                <span>
-                  <span className="specimen-nom">Réponse de l’assistant, à vérifier</span>
-                  <span className="t13 muted">Texte rédigé par le modèle. Il peut se tromper.</span>
-                </span>
-              </li>
-              <li className="specimen">
-                <span className="echantillon echantillon-action" aria-hidden="true">
-                  <span className="echantillon-trait" />
-                  <span className="coche">{COCHE_ENCRE}</span>
-                  <span className="echantillon-trait" />
-                </span>
-                <span>
-                  <span className="specimen-nom">Action réalisée</span>
-                  <span className="t13 muted">Ce que le système vient de faire.</span>
-                </span>
-              </li>
-              <li className="specimen">
-                <span className="echantillon echantillon-carte" aria-hidden="true">
-                  <span className="point point-carte" />
-                </span>
-                <span>
-                  <span className="specimen-nom">À confirmer par vous</span>
-                  <span className="t13 muted">Rien n’est soumis sans votre clic.</span>
-                </span>
-              </li>
-            </ul>
-          </section>
-          <section className="panel colonne interieur-32 ecart-16">
+      <ol ref={fil} className="fil-messages panneau-messages" aria-live="polite">
+        {echanges.length === 0 && (
+          <li className="colonne ecart-8 accueil-assistant">
+            <p className="poids-500">Comment puis-je vous aider ?</p>
             <p className="t15 muted">
-              Vous pouvez aussi faire votre demande vous-même, sans l’assistant.
+              L’assistant consulte vos comptes et prépare un brouillon. Il ne soumet jamais rien :
+              vous confirmez vous-même, et votre conseiller décide. Vous pouvez aussi faire votre
+              demande sans lui.
             </p>
-            <Link className="btn btn-secondaire aligne-debut" to="/client">
-              Aller à mes plafonds
-            </Link>
-          </section>
-        </aside>
+          </li>
+        )}
+        {echanges.map((echange, i) => (
+          <li key={i} className="fil-messages">
+            {echange.de === 'client' && (
+              <div className="msg-client">
+                <p className="msg-entete">
+                  <span className="pastille pastille-client" aria-hidden="true">
+                    {initiale}
+                  </span>
+                  Vous
+                </p>
+                <div className="bulle-msg texte-libre">{echange.texte}</div>
+              </div>
+            )}
+            {echange.de === 'indisponible' && (
+              <div className="bandeau-neutre bandeau-indisponible" role="status">
+                <div className="indisponible-texte">
+                  <span className="point point-neutre marge-haut-8" />
+                  <p className="t15 poids-500">{echange.texte}</p>
+                </div>
+              </div>
+            )}
+            {echange.de === 'agent' &&
+              echange.elements.map((element, j) => <Element key={j} element={element} />)}
+          </li>
+        ))}
+        {envoi && <li className="muted">L’assistant répond…</li>}
+      </ol>
+
+      <div className="colonne panneau-saisie">
+        {echanges.length === 0 && (
+          <div className="suggestions" role="group" aria-label="Suggestions de questions">
+            {EXEMPLES.map((exemple) => (
+              <button
+                key={exemple}
+                type="button"
+                className="suggestion"
+                onClick={() => void envoyer(exemple)}
+              >
+                {exemple}
+              </button>
+            ))}
+          </div>
+        )}
+        <form className="composer" onSubmit={soumettreFormulaire}>
+          <div className="champ extensible">
+            <label className="etiquette" htmlFor="message">
+              Votre message
+            </label>
+            <textarea
+              id="message"
+              ref={saisie}
+              className="saisie saisie-message"
+              rows={2}
+              maxLength={2000}
+              placeholder="Posez votre question"
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  void envoyer(message);
+                }
+              }}
+            />
+          </div>
+          <button
+            type="submit"
+            className="btn btn-primaire"
+            disabled={envoi || message.trim() === ''}
+          >
+            Envoyer
+          </button>
+        </form>
       </div>
-    </>
+    </aside>
   );
 }
+
+// Le pictogramme « panneau latéral » du bouton qui masque l'assistant.
+const ICONE_PANNEAU = (
+  <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
+    <rect
+      x="2.75"
+      y="3.75"
+      width="14.5"
+      height="12.5"
+      rx="2.5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+    />
+    <path d="M12.5 4v12" stroke="currentColor" strokeWidth="1.5" />
+  </svg>
+);
 
 const COCHE_ENCRE = (
   <svg width="10" height="10" viewBox="0 0 12 12" aria-hidden="true">
@@ -241,7 +275,10 @@ function Element({ element }: { element: ElementAgent }) {
     case 'explication':
       return (
         <div className="msg-ia" role="group" aria-label="Réponse de l’assistant, à vérifier">
-          <p className="msg-entete">Réponse de l’assistant, à vérifier</p>
+          <p className="msg-entete">
+            <span className="pastille pastille-ia" aria-hidden="true" />
+            Réponse de l’assistant, à vérifier
+          </p>
           <div className="bulle-msg texte-libre">{element.texte}</div>
         </div>
       );
@@ -367,6 +404,7 @@ function Donnee({ outil, contenu }: { outil: string; contenu: unknown }) {
 // La carte de confirmation : même récapitulatif et même route que le formulaire. La version de
 // la carte est transmise sans être affichée ; si la demande a changé depuis, le serveur refuse (R7).
 function Carte({ carte }: { carte: CarteConfirmation }) {
+  const { donneesModifiees } = useAssistant();
   const [etat, setEtat] = useState<'attente' | 'envoi' | 'soumise'>('attente');
   const [erreurs, setErreurs] = useState<ErreurDetaillee[]>([]);
 
@@ -381,6 +419,7 @@ function Carte({ carte }: { carte: CarteConfirmation }) {
         dureeJours: carte.dureeJours,
       });
       setEtat('soumise');
+      donneesModifiees();
     } catch (e) {
       setEtat('attente');
       setErreurs(
@@ -409,7 +448,7 @@ function Carte({ carte }: { carte: CarteConfirmation }) {
         <div className="carte-montant">
           <div className="colonne ecart-4">
             <p className="t13 muted">Plafond demandé</p>
-            <GrandMontant montant={carte.plafondDemande} corps={64} />
+            <GrandMontant montant={carte.plafondDemande} corps={48} />
           </div>
           <dl className="coffre-encart faits faits-ligne carte-faits">
             <div>

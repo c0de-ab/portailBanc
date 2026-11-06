@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { api } from '../../api';
+import { useAssistant } from '../../assistant';
 import { EncartEtat, Etat, Frise, GrandMontant, Jauge } from '../../composants';
 import {
   dateBreve,
@@ -257,7 +258,8 @@ function SansDemande({ compte }: { compte: Compte }) {
   );
 }
 
-// Questions proposées : elles ouvrent l'assistant avec la question déjà saisie, sans l'envoyer.
+// Questions proposées : elles ouvrent le panneau de l'assistant avec la question déjà saisie,
+// sans l'envoyer.
 // Ce sont des questions auxquelles le mode simulé sait répondre.
 const QUESTIONS_SANS_DEMANDE = [
   'Quel est mon plafond actuel ?',
@@ -266,6 +268,7 @@ const QUESTIONS_SANS_DEMANDE = [
 const QUESTIONS_AVEC_DEMANDE = ['Où en est ma demande ?', 'Quel est mon plafond actuel ?'];
 
 function AideAssistant({ sansDemande }: { sansDemande: boolean }) {
+  const { ouvrir } = useAssistant();
   const questions = sansDemande ? QUESTIONS_SANS_DEMANDE : QUESTIONS_AVEC_DEMANDE;
   return (
     <aside className="panel colonne span-4 etire interieur-32 ecart-12" aria-label="Assistant">
@@ -280,14 +283,23 @@ function AideAssistant({ sansDemande }: { sansDemande: boolean }) {
       </p>
       <div className="suggestions marge-haut-8" aria-label="Questions fréquentes">
         {questions.map((question) => (
-          <Link key={question} className="suggestion" to="/client/assistant" state={{ question }}>
+          <button
+            key={question}
+            type="button"
+            className="suggestion"
+            onClick={() => ouvrir(question)}
+          >
             {question}
-          </Link>
+          </button>
         ))}
       </div>
-      <Link className="lien marge-haut-auto aligne-debut" to="/client/assistant">
+      <button
+        type="button"
+        className="lien lien-bouton marge-haut-auto aligne-debut"
+        onClick={() => ouvrir()}
+      >
         Demander à l’assistant
-      </Link>
+      </button>
     </aside>
   );
 }

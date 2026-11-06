@@ -1,4 +1,13 @@
-import { Body, Controller, HttpCode, HttpStatus, Post, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  HttpCode,
+  HttpStatus,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { IsString, MaxLength, MinLength } from 'class-validator';
 import type { Request } from 'express';
 import { Roles, RolesGuard, UtilisateurConnecte } from '../auth/guards';
@@ -35,5 +44,13 @@ export class AgentController {
     // La mémoire vit dans la session : supprimée à la déconnexion ou à son expiration.
     req.session.conversation = memoire;
     return { elements };
+  }
+
+  // « Effacer la conversation » : la mémoire du modèle est retirée de la session, pour que
+  // l'assistant reparte vraiment de zéro. La connexion, elle, reste ouverte.
+  @Delete('conversation')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  effacer(@Req() req: Request) {
+    delete req.session.conversation;
   }
 }

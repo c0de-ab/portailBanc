@@ -100,6 +100,8 @@ export const api = {
   // est indisponible (IA_INDISPONIBLE) : les formulaires restent utilisables.
   envoyerMessage: (message: string) =>
     appeler<{ elements: ElementAgent[] }>('POST', '/agent/messages', { message }),
+  // Efface aussi la mémoire gardée par le serveur dans la session.
+  effacerConversation: () => appeler<void>('DELETE', '/agent/conversation'),
 
   // Personnel de la banque. Le périmètre est filtré par le serveur (R14) ; chaque décision
   // renvoie la version lue (R11) et un motif (R10).

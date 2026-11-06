@@ -1651,8 +1651,9 @@ a.panel:focus-visible {
 .suggestion {
   display: inline-flex;
   align-items: center;
-  height: 44px;
-  padding: 0 16px;
+  min-height: 44px;
+  padding: 10px 16px;
+  text-align: left;
   border-radius: 999px;
   border: 1px solid #d9d4ca;
   background: linear-gradient(180deg, #ffffff, #f8f6f2);
@@ -1672,10 +1673,6 @@ a.panel:focus-visible {
   border-color: #a9a397;
   transform: translateY(-1px);
   color: #16202a;
-}
-a.suggestion {
-  text-decoration: none;
-  white-space: nowrap;
 }
 .suggestion:focus-visible {
   outline: 2px solid #3b5fd9;
@@ -2130,15 +2127,6 @@ a.suggestion {
    (panneaux, grille à une colonne) gardent la main. */
 
 /* Assistant */
-.conversation {
-  display: flex;
-  flex-direction: column;
-}
-.zone-saisie {
-  border-top: 1px solid #e9e6df;
-  padding: 24px 40px 32px;
-  gap: 16px;
-}
 .saisie.saisie-message {
   min-height: 56px;
 }
@@ -2163,9 +2151,6 @@ a.suggestion {
   align-items: flex-start;
   gap: 12px;
   max-width: 440px;
-}
-.titre-reperes {
-  margin: 4px 0 24px;
 }
 .specimen-nom {
   display: block;
@@ -2510,4 +2495,237 @@ a.suggestion {
 }
 .marge-bas-56 {
   margin-bottom: 56px;
+}
+
+/* ---------- Panneau de l'assistant ----------
+   Une carte flottante, fixée à droite sur toute la hauteur : elle reste visible quand la page
+   défile. Sur grand écran, le contenu se resserre pour lui laisser la place ; en dessous, elle
+   passe par-dessus la page ; sur mobile, elle couvre l'écran. */
+.panneau-assistant {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  bottom: 12px;
+  z-index: 20;
+  width: 440px;
+  max-width: calc(100% - 24px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #fbfaf7;
+  border: 1px solid #e3dfd7;
+  border-radius: 20px;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.8) inset,
+    0 24px 56px -24px rgba(11, 27, 43, 0.4);
+}
+/* L'attribut hidden doit l'emporter sur display: flex. */
+.panneau-assistant[hidden] {
+  display: none;
+}
+.panneau-entete {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 16px 16px 24px;
+  border-bottom: 1px solid #e9e6df;
+}
+.panneau-effacer {
+  height: 36px;
+  padding: 0 14px;
+  font-size: 14px;
+}
+/* Le bouton icône qui masque le panneau. */
+.panneau-masquer {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: #5a6472;
+  cursor: pointer;
+}
+.panneau-masquer:hover {
+  background: #efece6;
+  color: #16202a;
+}
+.panneau-masquer:focus-visible,
+.lanceur-assistant:focus-visible {
+  outline: 2px solid #3b5fd9;
+  outline-offset: 2px;
+}
+.reperes {
+  padding: 12px 24px;
+  border-bottom: 1px solid #e9e6df;
+}
+.reperes summary {
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 24px;
+  font-weight: 500;
+  color: #16202a;
+}
+.reperes ul {
+  margin-top: 16px;
+}
+.panneau-assistant .specimen {
+  grid-template-columns: 64px minmax(0, 1fr);
+  padding: 12px 0;
+}
+/* Seule la liste des messages défile ; l'en-tête et la saisie restent en place. */
+.panneau-messages {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 24px;
+}
+/* Les messages partent du bas, près de la saisie, comme dans une messagerie. La marge auto du
+   premier élément (et non justify-content) garde le défilement possible vers le haut. */
+.panneau-messages > :first-child {
+  margin-top: auto;
+}
+/* La pastille devant le nom de l'auteur : votre initiale, ou un rond en pointillés pour
+   l'assistant, comme la bordure de ses réponses (à vérifier). */
+.pastille {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+}
+.pastille-client {
+  background: radial-gradient(circle at 30% 25%, #2e5a86 0%, #17375a 60%, #10273f 100%);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 600;
+}
+.pastille-ia {
+  border: 1.5px dashed #a9a397;
+  background: #ffffff;
+}
+.panneau-saisie {
+  gap: 12px;
+  padding: 16px 24px 24px;
+  border-top: 1px solid #e9e6df;
+}
+.panneau-assistant .composer {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+}
+.panneau-assistant .composer .btn {
+  align-self: flex-end;
+}
+.panneau-assistant .msg-client {
+  max-width: 88%;
+}
+.panneau-assistant .msg-ia {
+  max-width: 100%;
+}
+.panneau-assistant .action-corps {
+  flex-wrap: wrap;
+  white-space: normal;
+}
+.panneau-assistant .bandeau-indisponible {
+  padding: 16px 20px;
+}
+/* La carte de confirmation, en version étroite : les faits s'empilent sous le montant. */
+.panneau-assistant .msg-confirmer {
+  padding: 24px;
+}
+.panneau-assistant .carte-faits {
+  width: 100%;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 20px;
+}
+/* Le bouton « Assistant » du menu a l'apparence des liens du menu. */
+button.rail-lien {
+  width: 100%;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.rail-lien[aria-expanded='true'] {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.11), rgba(255, 255, 255, 0.05));
+  color: #ffffff;
+}
+.rail-lien[aria-expanded='true'] svg {
+  color: #a7baff;
+}
+/* En dessous de 1600 px, le contenu resserré serait trop étroit (la jauge se chevaucherait). */
+@media (min-width: 1600px) {
+  .shell.avec-assistant .zone {
+    margin-right: 452px;
+  }
+}
+/* Le bouton flottant, en bas à droite, visible tant que le panneau est masqué. */
+.lanceur-assistant {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 15;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  height: 48px;
+  padding: 0 12px 0 16px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #17375a 0%, #0f2438 100%);
+  color: #ffffff;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 14px 32px -12px rgba(11, 27, 43, 0.6);
+  transition: transform 0.2s ease;
+}
+.lanceur-assistant:hover {
+  transform: translateY(-1px);
+}
+.lanceur-assistant[hidden] {
+  display: none;
+}
+.lanceur-assistant svg {
+  color: #a7baff;
+}
+.lanceur-assistant kbd {
+  padding: 2px 8px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.12);
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 20px;
+  color: #d5dde8;
+}
+@media (max-width: 720px) {
+  .panneau-assistant {
+    inset: 0;
+    width: 100%;
+    max-width: 100%;
+    border: 0;
+    border-radius: 0;
+  }
+  .lanceur-assistant {
+    right: 16px;
+    bottom: 16px;
+  }
+  /* Pas de clavier sur un téléphone : le raccourci n'est pas affiché. */
+  .lanceur-assistant kbd {
+    display: none;
+  }
+  button.rail-lien {
+    width: auto;
+  }
 }

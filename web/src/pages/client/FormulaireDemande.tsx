@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { api, ErreurApi, type AvecAvertissements } from '../../api';
+import { useAssistant } from '../../assistant';
 import { Etat, GrandMontant, Jauge, ListeErreurs } from '../../composants';
 import {
   enDirhams,
@@ -41,6 +42,7 @@ async function lireDemande(compteId: string | undefined, id: string | undefined)
 export function FormulaireDemande() {
   const { compteId, id } = useParams();
   const naviguer = useNavigate();
+  const { ouvrir } = useAssistant();
   const [demande, setDemande] = useState<Demande | null>(null);
   const [plafondInitial, setPlafondInitial] = useState<number | null>(null);
   const [champs, setChamps] = useState<Champs>({ plafond: '', duree: '', motif: '' });
@@ -355,9 +357,9 @@ export function FormulaireDemande() {
           </p>
         </div>
         <div className="rangee">
-          <Link className="lien" to="/client/assistant">
+          <button type="button" className="lien lien-bouton" onClick={() => ouvrir()}>
             Préparer avec l’assistant
-          </Link>
+          </button>
           <Etat ton={libelle.ton}>{libelle.texte}</Etat>
         </div>
       </div>

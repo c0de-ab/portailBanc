@@ -174,11 +174,12 @@ select {
 .zone {
   flex: 999 1 560px;
   min-width: 0;
-  padding: 40px 64px 96px;
+  padding: 32px 40px 96px;
 }
+/* Le contenu occupe toute la largeur disponible ; les paragraphes gardent leur propre
+   largeur maximale, pour rester lisibles. */
 .contenu {
-  max-width: 1120px;
-  margin: 0 auto;
+  width: 100%;
 }
 .g12 {
   display: grid;
@@ -2051,10 +2052,11 @@ a.suggestion {
 }
 
 /* Barre du haut : l'utilisateur connecté et la déconnexion, à droite */
-/* Au fond à droite : les marges négatives rapprochent la barre du coin de l'écran,
-   à 24 px du bord, au lieu de l'aligner sur la colonne du contenu. */
+/* En haut à droite, alignée sur le bord droit du contenu. Elle flotte : l'en-tête de la
+   page (.entete) se place à sa gauche, sur la même ligne, au lieu d'en dessous. */
 .barre-haut {
-  margin: -16px -40px 24px 0;
+  float: right;
+  margin-left: 24px;
   display: flex;
   justify-content: flex-end;
   align-items: center;
@@ -2100,14 +2102,10 @@ a.suggestion {
   padding: 0 16px;
   font-size: 14px;
 }
-@media (max-width: 1100px) {
-  .barre-haut {
-    margin: -8px -8px 24px 0;
-  }
-}
-
+/* Sur mobile, la barre reprend sa propre ligne : l'en-tête n'aurait plus la place. */
 @media (max-width: 720px) {
   .barre-haut {
+    float: none;
     margin: 0 0 24px;
     gap: 12px;
   }

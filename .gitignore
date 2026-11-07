@@ -18,3 +18,4 @@ api/uploads/
 # Documentation de travail : tous les fichiers Markdown restent en local, sauf le README
 *.md
 !README.md
+!docs/choix-techniques.md

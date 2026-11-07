@@ -2,8 +2,6 @@
 
 Un client demande une augmentation **temporaire** de son plafond de virement (de 1 à 7 jours, jusqu'à 100 000 DH). Un conseiller, ou un superviseur au-delà de 30 000 DH, traite la demande. Une banque simulée applique ensuite le plafond, puis le désactive à l'échéance. Un assistant IA aide le client à préparer sa demande, sans jamais décider ni soumettre à sa place.
 
-Le parti pris : **un code simple, lisible et testé**, où les règles critiques sont garanties par le serveur et par la base, et jamais par l'écran ni par le modèle.
-
 ## Initiatives
 
 Ce qui va au-delà du minimum demandé. Chaque initiative améliore la fiabilité du parcours ou la confiance qu'on peut lui accorder.

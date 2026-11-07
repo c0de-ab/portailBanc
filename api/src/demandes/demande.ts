@@ -1,6 +1,7 @@
+import type { BaseService } from '../base/base.service';
 import type { StatutDemande } from '../domain/transitions';
 
-// La table requests, telle que le code la manipule (CLAUDE.md, règle 13) : les fonctions
+// La table requests, telle que le code la manipule : les fonctions
 // d'accès convertissent chaque ligne avec versDemande, le reste du code ne voit jamais de
 // ligne brute.
 export type StatutExecution = 'EN_ATTENTE' | 'REUSSIE' | 'ECHEC' | 'INCONNU';
@@ -90,6 +91,40 @@ export function versDemande(ligne: LigneDemande): Demande {
     createdAt: ligne.created_at,
     updatedAt: ligne.updated_at,
   };
+}
+
+// Les révisions soumises d'une demande (v1, v2…), dans l'ordre : la table request_revisions,
+// lue de la même façon pour le client et pour le personnel.
+export type Revision = {
+  revisionNo: number;
+  plafondDemande: number;
+  dureeJours: number;
+  motif: string;
+  justificatifNom: string | null;
+  soumiseLe: Date;
+};
+
+export async function lireRevisions(base: BaseService, requestId: string): Promise<Revision[]> {
+  const { rows } = await base.requete<{
+    revision_no: number;
+    plafond_demande: number;
+    duree_jours: number;
+    motif: string;
+    justificatif_nom: string | null;
+    created_at: Date;
+  }>(
+    `SELECT revision_no, plafond_demande, duree_jours, motif, justificatif_nom, created_at
+       FROM request_revisions WHERE request_id = $1 ORDER BY revision_no`,
+    [requestId],
+  );
+  return rows.map((r) => ({
+    revisionNo: r.revision_no,
+    plafondDemande: r.plafond_demande,
+    dureeJours: r.duree_jours,
+    motif: r.motif,
+    justificatifNom: r.justificatif_nom,
+    soumiseLe: r.created_at,
+  }));
 }
 
 // Ce que le CLIENT voit d'une demande. Ni le nom du fichier sur le disque, ni le conseiller,

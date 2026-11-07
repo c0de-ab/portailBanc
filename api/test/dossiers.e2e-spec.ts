@@ -12,7 +12,7 @@ import { parcours } from './parcours';
 import { creerPoolTest, viderBase } from './outils-base';
 
 // Le traitement des dossiers par le conseiller et le superviseur, par les routes, sur la vraie
-// base et avec les comptes de démonstration (docs/modele-donnees.md, § 7).
+// base et avec les comptes de démonstration.
 
 const AMAL = 'client.amal@portail.test';
 const YOUSSEF = 'client.youssef@portail.test';
@@ -75,7 +75,9 @@ describe('Traitement des dossiers', () => {
       const karim = await listeDe(KARIM);
       const nadia = await listeDe(NADIA);
 
-      expect(karim.map((d) => d.plafondDemande).sort()).toEqual([25_000, 40_000]);
+      expect(karim.map((d) => d.plafondDemande).sort((x, y) => (x ?? 0) - (y ?? 0))).toEqual([
+        25_000, 40_000,
+      ]);
       expect(nadia.map((d) => d.plafondDemande)).toEqual([35_000]);
       expect(karim.every((d) => d.statut !== 'BROUILLON')).toBe(true);
     });
@@ -267,6 +269,34 @@ describe('Traitement des dossiers', () => {
       expect(parOmar.status).toBe(200);
     });
 
+    it('le détail donne les actions possibles, calculées par les mêmes règles que la décision', async () => {
+      const actionsDe = async (email: string, id: string) =>
+        (
+          (
+            await http()
+              .get(`/api/dossiers/${id}`)
+              .set('Cookie', await appTest.connecter(email))
+          ).body as { actions: string[] }
+        ).actions;
+
+      // R8 : jusqu'à 30 000 DH, Karim décide ; au-delà, il recommande.
+      const petite = await demandeDe(AMAL, 25_000);
+      expect(await actionsDe(KARIM, petite.id)).toEqual([
+        'demanderComplement',
+        'approuver',
+        'rejeter',
+      ]);
+      const grande = await demandeDe(HAMID, 35_000);
+      expect(await actionsDe(LEILA, grande.id)).toEqual(['demanderComplement', 'recommander']);
+
+      // R9 : Leila a recommandé, elle ne valide pas ; Omar, de la même équipe, valide (H5 : pas
+      // de complément pour le superviseur).
+      const leila = await appTest.connecter(LEILA);
+      await p.decider(leila, grande.id, 'recommander', grande.version);
+      expect(await actionsDe(LEILA, grande.id)).toEqual([]);
+      expect(await actionsDe(OMAR, grande.id)).toEqual(['approuver', 'rejeter']);
+    });
+
     it('un conseiller ne décide pas sur un dossier transmis au superviseur (403 ROLE)', async () => {
       const demande = await demandeDe(MEHDI, 40_000);
       const karim = await appTest.connecter(KARIM);
@@ -327,11 +357,15 @@ describe('Traitement des dossiers', () => {
         p.decider(karim, demande.id, 'rejeter', demande.version),
       ]);
 
-      expect([approbation.status, rejet.status].sort()).toEqual([200, 409]);
-      const decisions = await pool.query('SELECT 1 FROM decisions WHERE request_id = $1', [
-        demande.id,
+      expect([approbation.status, rejet.status].sort((x, y) => x - y)).toEqual([200, 409]);
+      // Une seule décision enregistrée, et c'est bien celle qui a reçu 200.
+      const decisions = await pool.query<{ type: string }>(
+        'SELECT type FROM decisions WHERE request_id = $1',
+        [demande.id],
+      );
+      expect(decisions.rows).toEqual([
+        { type: approbation.status === 200 ? 'APPROBATION' : 'REJET' },
       ]);
-      expect(decisions.rowCount).toBe(1);
     });
 
     it('une décision fondée sur une version périmée est refusée (R11)', async () => {

@@ -3,7 +3,7 @@ import { BanqueService, ErreurBanque } from '../src/banque/banque.service';
 import { BaseService } from '../src/base/base.service';
 import { creerPoolTest, viderBase } from './outils-base';
 
-// La banque simulée seule (docs/modele-donnees.md, § 3), sur la vraie base portail_test.
+// La banque simulée seule, sur la vraie base portail_test.
 describe('Banque simulée', () => {
   let pool: Pool;
   let base: BaseService;

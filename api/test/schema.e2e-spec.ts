@@ -2,7 +2,7 @@ import type { Pool } from 'pg';
 import { creerClientAvecCompte, creerPoolTest, viderBase } from './outils-base';
 
 // Tests du schéma, sur la vraie base portail_test : ils vérifient les garanties que la base
-// apporte seule (docs/modele-donnees.md, § 4). Chaque refus est vérifié par son code PostgreSQL
+// apporte seule. Chaque refus est vérifié par son code PostgreSQL
 // et par le nom de la contrainte : on sait ainsi que c'est la bonne règle qui a bloqué.
 // Les tests par les routes viendront avec les services.
 

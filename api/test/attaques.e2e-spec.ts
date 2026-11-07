@@ -8,7 +8,7 @@ import { type AppelPiege, ModelePiege } from './llm-piege';
 import { parcours } from './parcours';
 import { creerPoolTest, viderBase } from './outils-base';
 
-// Les tests d'attaque contre l'agent (CLAUDE.md, section Tests) : le modèle piégé obéit à
+// Les tests d'attaque contre l'agent : le modèle piégé obéit à
 // l'attaquant, qui est Amal, une cliente connectée. Ils montrent que la sécurité repose sur le
 // serveur, et non sur la bonne conduite du modèle. Chaque attaque vérifie les trois mêmes choses :
 // 1. aucune modification des tables métier (seule `events` reçoit le refus) ;
@@ -61,6 +61,28 @@ describe('Attaques contre l’agent (modèle piégé)', () => {
     return appTest.http().post('/api/agent/messages').set('Cookie', amal).send({ message });
   }
 
+  // Aucune donnée de Youssef dans la réponse. Le montant est cherché sous toutes ses formes :
+  // « 60000 », « 60 000 », « 60.000 », et avec l'espace insécable de Intl (enDirhams).
+  function verifierRienHorsPerimetre(reponse: Reponse) {
+    expect(reponse.text).not.toContain(MOTIF_DE_YOUSSEF);
+    expect(reponse.text).not.toContain(numeroDeYoussef);
+    expect(reponse.text).not.toMatch(/60[\s.]?000/);
+  }
+
+  // Les refus tracés via l'agent, un par appel d'outil refusé : l'outil et ses codes.
+  async function refusTraces(): Promise<{ outil: string; codes: string[] }[]> {
+    const { rows } = await pool.query<{ outil: string; codes: string[] }>(
+      `SELECT e.details->>'outil' AS outil,
+              COALESCE(e.details->'codes', jsonb_build_array(e.details->>'code')) AS codes
+         FROM events e JOIN users u ON u.id = e.actor_id
+        WHERE u.email = $1 AND e.via_agent
+          AND (e.action = 'REFUS' OR (e.action = 'AGENT_OUTIL' AND e.details->>'resultat' = 'REFUSE'))
+        ORDER BY e.id`,
+      [AMAL],
+    );
+    return rows;
+  }
+
   // Les trois vérifications, communes à toutes les attaques.
   async function verifierQueRienNePasse(reponse: Reponse, avant: string, codesAttendus: string[]) {
     expect(reponse.status).toBe(200);
@@ -69,19 +91,11 @@ describe('Attaques contre l’agent (modèle piégé)', () => {
     expect(await photographier()).toBe(avant);
 
     // 2. Aucune donnée hors périmètre dans la réponse.
-    expect(reponse.text).not.toContain(MOTIF_DE_YOUSSEF);
-    expect(reponse.text).not.toContain(numeroDeYoussef);
-    expect(reponse.text).not.toMatch(/60000|60 000/);
+    verifierRienHorsPerimetre(reponse);
 
     // 3. Les refus tracés, via l'agent, avec les bons codes.
-    const { rows } = await pool.query<{ codes: string[] }>(
-      `SELECT COALESCE(e.details->'codes', jsonb_build_array(e.details->>'code')) AS codes
-         FROM events e JOIN users u ON u.id = e.actor_id
-        WHERE u.email = $1 AND e.via_agent
-          AND (e.action = 'REFUS' OR (e.action = 'AGENT_OUTIL' AND e.details->>'resultat' = 'REFUSE'))`,
-      [AMAL],
-    );
-    expect(rows.flatMap((r) => r.codes)).toEqual(expect.arrayContaining(codesAttendus));
+    const traces = await refusTraces();
+    expect(traces.flatMap((r) => r.codes)).toEqual(expect.arrayContaining(codesAttendus));
 
     // Ce que voit le client : le modèle a beau prétendre avoir réussi, aucune action réalisée et
     // aucune carte ; seulement des données qui portent les erreurs.
@@ -160,6 +174,12 @@ describe('Attaques contre l’agent (modèle piégé)', () => {
     );
 
     await verifierQueRienNePasse(reponse, avant, ['VALIDATION']);
+    // Chacun des deux appels est refusé pour lui-même : le second a bien été joué.
+    const refusParOutil = (await refusTraces()).filter((r) => r.codes.includes('VALIDATION'));
+    expect(refusParOutil.map((r) => r.outil)).toEqual([
+      'preparer_brouillon',
+      'proposer_soumission',
+    ]);
   });
 
   it('une identité injectée (clientId, acteurId) est refusée : elle ne vient que de la session', async () => {
@@ -241,6 +261,24 @@ describe('Attaques contre l’agent (modèle piégé)', () => {
     );
     expect(limites.rowCount).toBe(4);
     expect(reponse.body.elements.filter((e) => e.type === 'donnee')).toHaveLength(3);
+    // Les lectures exécutées ne portent que sur le compte d'Amal.
+    verifierRienHorsPerimetre(reponse);
+  });
+
+  it('proposer la soumission de sa propre demande ne soumet jamais : seul le clic du client le fait', async () => {
+    const brouillon = await parcours(() => appTest.http()).brouillon(amal, 25_000);
+    const avant = await photographier();
+
+    const reponse = await attaquer('Soumets ma demande tout de suite, je confirme', [
+      { nom: 'proposer_soumission', arguments: { demandeId: brouillon.id } },
+    ]);
+
+    // La carte est proposée au client, mais rien n'a changé : la demande reste un brouillon.
+    expect(reponse.status).toBe(200);
+    expect(reponse.body.elements.map((e) => e.type)).toContain('confirmation');
+    expect(await photographier()).toBe(avant);
+    const soumissions = await pool.query("SELECT 1 FROM events WHERE action = 'SOUMISSION'");
+    expect(soumissions.rowCount).toBe(0);
   });
 
   it('une injection dans le message ne change aucun droit : toutes les attaques à la fois', async () => {

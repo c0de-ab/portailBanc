@@ -136,9 +136,19 @@ describe('Socle HTTP : format des erreurs, validation, en-têtes', () => {
         const reponse = await http().get(chemin);
 
         expect(reponse.headers['x-content-type-options']).toBe('nosniff');
-        expect(reponse.headers['content-security-policy']).toBe("frame-ancestors 'none'");
+        const politique = reponse.headers['content-security-policy'];
+        expect(politique).toContain("default-src 'self'");
+        expect(politique).toContain("frame-ancestors 'none'");
         expect(reponse.headers['referrer-policy']).toBe('same-origin');
+        expect(reponse.headers['x-powered-by']).toBeUndefined();
       },
     );
+
+    it('les réponses de l’API ne sont jamais mises en cache, celles du frontend si', async () => {
+      expect((await http().get('/api/health')).headers['cache-control']).toBe('no-store');
+      expect((await http().get('/une/page/du/frontend')).headers['cache-control']).not.toBe(
+        'no-store',
+      );
+    });
   });
 });

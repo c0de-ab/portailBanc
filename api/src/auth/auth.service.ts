@@ -51,6 +51,9 @@ export class AuthService implements OnModuleInit {
     // Toujours une vérification Argon2, que l'e-mail existe ou non.
     const valide = await argon2.verify(ligne?.password_hash ?? this.hachageFactice, motDePasse);
 
+    // Chaque refus est tracé (règle 11). Limite connue : sans limitation de débit, volontairement
+    // écartée du prototype, une rafale de tentatives fait grossir `events` d'autant. En
+    // production, une limitation par adresse IP, au niveau du proxy, bornerait ce volume.
     if (!ligne || !valide) {
       await this.tracer('CONNEXION_REFUSEE', null, { email: emailNormalise }, maintenant);
       return null;

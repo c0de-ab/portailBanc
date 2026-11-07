@@ -6,7 +6,7 @@ import { codesDe, demarrerAppTest, erreursDe } from './app-test';
 import { creerPoolTest, viderBase } from './outils-base';
 
 // Le parcours du client, par les routes, sur la vraie base portail_test et avec les comptes
-// de démonstration (docs/modele-donnees.md, § 7).
+// de démonstration.
 
 const AMAL = 'client.amal@portail.test';
 const YOUSSEF = 'client.youssef@portail.test';
@@ -254,7 +254,7 @@ describe('Parcours du client', () => {
 
       const [a, b] = await Promise.all([soumettre(cookie, demande), soumettre(cookie, demande)]);
 
-      expect([a.status, b.status].sort()).toEqual([200, 409]);
+      expect([a.status, b.status].sort((x, y) => x - y)).toEqual([200, 409]);
       const revisions = await pool.query('SELECT 1 FROM request_revisions');
       expect(revisions.rowCount).toBe(1);
     });

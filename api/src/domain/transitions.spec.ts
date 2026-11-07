@@ -1,6 +1,6 @@
 import { ACTIONS, type Action, etatApres, STATUTS, type StatutDemande } from './transitions';
 
-// Le diagramme des états (docs/etats-transitions.md, § 2), recopié ici À LA MAIN et non
+// Le diagramme des états, recopié ici À LA MAIN et non
 // dérivé de la table du code : le test compare deux écritures indépendantes du même diagramme.
 const DIAGRAMME: [Action, StatutDemande, StatutDemande][] = [
   ['modifier', 'BROUILLON', 'BROUILLON'],

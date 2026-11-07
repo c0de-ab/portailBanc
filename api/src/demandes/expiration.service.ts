@@ -8,7 +8,7 @@ import { COLONNES_DEMANDE, type Demande, type LigneDemande, versDemande } from '
 
 export type BilanExpiration = { expirees: number; enEchec: number };
 
-// L'expiration des plafonds temporaires (docs/etats-transitions.md, § 3, H6, H22).
+// L'expiration des plafonds temporaires (H6, H22).
 // Des transitions DU SYSTÈME : conditionnées au seul statut ACTIVE, sans version (règle 5).
 // La clé est toujours desact-<id> : une reprise rejoue la même clé, jamais de double désactivation.
 @Injectable()
@@ -36,8 +36,17 @@ export class ExpirationService {
     const bilan: BilanExpiration = { expirees: 0, enEchec: 0 };
     // Une demande après l'autre : l'échec de l'une n'arrête pas les autres.
     for (const demande of rows.map(versDemande)) {
-      const expiree = await this.desactiver(demande, dateSimulee, maintenant);
-      bilan[expiree ? 'expirees' : 'enEchec']++;
+      try {
+        const expiree = await this.desactiver(demande, dateSimulee, maintenant);
+        bilan[expiree ? 'expirees' : 'enEchec']++;
+      } catch (erreur) {
+        // Erreur inattendue (base indisponible, par exemple) : la demande reste Active, et le
+        // passage suivant la reprend avec la même clé, dont la banque rejoue le résultat (H16).
+        this.journal.error(
+          `Expiration de ${demande.id} interrompue : ${erreur instanceof Error ? erreur.message : String(erreur)}`,
+        );
+        bilan.enEchec++;
+      }
     }
     return bilan;
   }

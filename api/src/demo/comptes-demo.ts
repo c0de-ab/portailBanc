@@ -2,7 +2,7 @@ import * as argon2 from 'argon2';
 import type { PoolClient } from 'pg';
 import type { Role } from '../auth/utilisateur-session';
 
-// Les comptes de démonstration (docs/modele-donnees.md, § 7). Identités, équipes, dossiers
+// Les comptes de démonstration. Identités, équipes, dossiers
 // clients et comptes bancaires seulement : les demandes d'Inès et de Mehdi seront créées
 // par les services métier, à leur étape, pour suivre le vrai parcours.
 // Toutes les identités sont fictives. Le mot de passe, commun à tous les comptes, est

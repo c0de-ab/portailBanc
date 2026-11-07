@@ -7,7 +7,7 @@ import { etatApres } from '../domain/transitions';
 import { HistoriqueService } from '../historique/historique.service';
 import { COLONNES_DEMANDE, type Demande, type LigneDemande, versDemande } from './demande';
 
-// L'activation d'une demande approuvée (docs/etats-transitions.md, § 3). Ce sont des
+// L'activation d'une demande approuvée. Ce sont des
 // transitions DU SYSTÈME : conditionnées au seul statut APPROUVEE, sans version (règle 5).
 // La clé est toujours act-<id> : une reprise rejoue la même clé, jamais de double activation.
 @Injectable()

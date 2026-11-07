@@ -1,4 +1,5 @@
 import {
+  agitDansSonRole,
   type ContenuDemande,
   type ContexteDemande,
   type Decision,
@@ -195,5 +196,28 @@ describe('verifierDecision', () => {
 
   it('renvoie toutes les erreurs à la fois', () => {
     expect(codesDecision({ motif: '' }, 60_000)).toEqual(['R8', 'R10']);
+  });
+});
+
+describe('agitDansSonRole (H12, H18)', () => {
+  const karim = { id: 'karim', roles: ['CONSEILLER'], teamId: 'A' };
+  const rachid = { id: 'rachid', roles: ['SUPERVISEUR'], teamId: 'A' };
+  const soumise = { advisorId: 'karim', teamId: 'A', recommenderId: null };
+  const transmise = { advisorId: 'karim', teamId: 'A', recommenderId: 'karim' };
+
+  it('le conseiller agit sur les dossiers dont il est le conseiller, et seulement eux', () => {
+    expect(agitDansSonRole('CONSEILLER', karim, soumise)).toBe(true);
+    expect(agitDansSonRole('CONSEILLER', karim, { ...soumise, advisorId: 'nadia' })).toBe(false);
+  });
+
+  it('le superviseur agit seulement sur les dossiers transmis de son équipe', () => {
+    expect(agitDansSonRole('SUPERVISEUR', rachid, transmise)).toBe(true);
+    expect(agitDansSonRole('SUPERVISEUR', rachid, soumise)).toBe(false);
+    expect(agitDansSonRole('SUPERVISEUR', rachid, { ...transmise, teamId: 'B' })).toBe(false);
+  });
+
+  it('sans le rôle, aucun droit, même dans le bon périmètre', () => {
+    expect(agitDansSonRole('SUPERVISEUR', karim, transmise)).toBe(false);
+    expect(agitDansSonRole('CONSEILLER', rachid, { ...soumise, advisorId: 'rachid' })).toBe(false);
   });
 });

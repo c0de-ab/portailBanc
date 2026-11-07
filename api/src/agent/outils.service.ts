@@ -1,8 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 import type { UtilisateurSession } from '../auth/utilisateur-session';
-import { BaseService } from '../base/base.service';
 import { vueClient } from '../demandes/demande';
 import { DemandesClientService } from '../demandes/demandes-client.service';
 import { ErreurApi } from '../http/erreur-api';
@@ -33,8 +32,9 @@ type Erreurs = { erreurs: { code: string; champ?: string; message: string }[] };
 // formulaire. Tout se fait « pour l'agent » : les événements portent via_agent = true.
 @Injectable()
 export class OutilsService {
+  private readonly journal = new Logger(OutilsService.name);
+
   constructor(
-    private readonly base: BaseService,
     private readonly historique: HistoriqueService,
     private readonly demandes: DemandesClientService,
   ) {}
@@ -48,7 +48,9 @@ export class OutilsService {
       // 1. Un outil inconnu (par exemple « approuver ») : refusé et tracé.
       if (!estOutil(appel.nom)) {
         return this.refuser(client, appel, maintenant, 'OUTIL_INCONNU', {
-          erreurs: [{ code: 'OUTIL_INCONNU', message: `L’outil « ${appel.nom} » n’existe pas.` }],
+          erreurs: [
+            { code: 'OUTIL_INCONNU', message: `L’outil « ${borne(appel.nom)} » n’existe pas.` },
+          ],
         });
       }
 
@@ -73,13 +75,18 @@ export class OutilsService {
         if (erreur instanceof ErreurApi) {
           const contenu: Erreurs = { erreurs: erreur.erreurs };
           await this.tracer(client, appel, maintenant, 'REFUSE', erreur.erreurs[0].code);
-          return {
-            pourLeModele: contenu,
-            erreur: true,
-            elements: [{ type: 'donnee', outil: appel.nom, contenu }],
-          };
+          return echec(appel.nom, contenu);
         }
-        throw erreur;
+        // Erreur inattendue (base indisponible…) : journalisée, et rendue au modèle comme un
+        // échec. Les actions des outils précédents restent affichées au client, et l'agent ne
+        // peut pas prétendre avoir agi.
+        this.journal.error(
+          `Outil ${appel.nom} en erreur : ${erreur instanceof Error ? erreur.message : String(erreur)}`,
+        );
+        await this.tracer(client, appel, maintenant, 'ERREUR', 'ERREUR_INTERNE').catch(() => {});
+        return echec(appel.nom, {
+          erreurs: [{ code: 'ERREUR_INTERNE', message: 'L’outil a échoué. Réessayez plus tard.' }],
+        });
       }
     });
   }
@@ -92,13 +99,11 @@ export class OutilsService {
   ): Promise<ResultatOutil> {
     switch (nom) {
       case 'consulter_comptes': {
-        const comptes = await this.demandes.comptes(client);
         // R5 : l'agent prévient dès le début d'un dossier incomplet (H23).
-        const { rows } = await this.base.requete<{ dossier_complet: boolean }>(
-          'SELECT dossier_complet FROM clients WHERE id = $1',
-          [client.clientId],
-        );
-        const contenu = { comptes, dossierComplet: rows[0].dossier_complet };
+        const contenu = {
+          comptes: await this.demandes.comptes(client),
+          dossierComplet: await this.demandes.dossierComplet(client),
+        };
         return donnee(nom, contenu);
       }
 
@@ -115,15 +120,8 @@ export class OutilsService {
       case 'preparer_brouillon': {
         const { compteId, ...contenu } = args as ArgumentsPreparerBrouillon;
         // H20 : la demande en Complément demandé du compte, sinon son brouillon. La version est
-        // toujours relue ici, côté serveur, jamais fournie par le modèle.
-        const enComplement = await this.base.requete<{ id: string; version: number }>(
-          `SELECT id, version FROM requests
-            WHERE account_id = $1 AND client_id = $2 AND statut = 'COMPLEMENT_DEMANDE'`,
-          [compteId, client.clientId],
-        );
-        const cible =
-          enComplement.rows[0] ??
-          (await this.demandes.obtenirBrouillon(client, compteId, maintenant)).demande;
+        // toujours relue côté serveur, jamais fournie par le modèle.
+        const cible = await this.demandes.demandeAPreparer(client, compteId, maintenant);
         const { demande, avertissements } = await this.demandes.modifier(
           client,
           cible.id,
@@ -144,17 +142,9 @@ export class OutilsService {
 
       case 'proposer_soumission': {
         const { demandeId } = args as ArgumentsProposerSoumission;
-        const { demande } = await this.demandes.detail(client, demandeId, maintenant);
-        if (demande.statut !== 'BROUILLON' && demande.statut !== 'COMPLEMENT_DEMANDE') {
-          throw new ErreurApi(409, [
-            { code: 'TRANSITION', message: 'Cette demande ne peut plus être soumise.' },
-          ]);
-        }
-        // Pas de carte tant qu'une règle n'est pas respectée : la soumission serait refusée.
-        const avertissements = await this.demandes.avertissements(demande);
-        if (avertissements.length > 0) {
-          throw new ErreurApi(422, avertissements);
-        }
+        // Pas de carte pour une demande que la soumission refuserait : le service vérifie la
+        // transition et toutes les règles, exactement comme pour la soumission.
+        const demande = await this.demandes.pretePourConfirmation(client, demandeId, maintenant);
         const carte = {
           demandeId: demande.id,
           version: demande.version,
@@ -178,7 +168,7 @@ export class OutilsService {
     client: UtilisateurSession,
     appel: AppelOutil,
     maintenant: Date,
-    resultat: 'OK' | 'REFUSE',
+    resultat: 'OK' | 'REFUSE' | 'ERREUR',
     code?: string,
   ) {
     return this.historique.ecrire({
@@ -186,8 +176,8 @@ export class OutilsService {
       acteurId: client.id,
       viaAgent: true,
       details: {
-        outil: appel.nom,
-        arguments: appel.arguments ?? null,
+        outil: borne(appel.nom),
+        arguments: argumentsPourHistorique(appel.arguments),
         resultat,
         code: code ?? null,
       },
@@ -209,18 +199,36 @@ export class OutilsService {
       viaAgent: true,
       details: {
         action: 'outil',
-        outil: appel.nom,
+        outil: borne(appel.nom),
         raison,
         codes: contenu.erreurs.map((e) => e.code),
       },
       date: maintenant,
     });
-    return {
-      pourLeModele: contenu,
-      erreur: true,
-      elements: [{ type: 'donnee', outil: appel.nom, contenu }],
-    };
+    return echec(appel.nom, contenu);
   }
+}
+
+function echec(outil: string, contenu: Erreurs): ResultatOutil {
+  return { pourLeModele: contenu, erreur: true, elements: [{ type: 'donnee', outil, contenu }] };
+}
+
+// Le nom d'un outil vient du modèle : borné avant d'être affiché ou enregistré.
+function borne(texte: string, longueur = 64): string {
+  return texte.length > longueur ? `${texte.slice(0, longueur)}…` : texte;
+}
+
+// Les arguments utiles d'un appel, pour l'historique : le motif, texte libre du client, n'est
+// gardé qu'en début, pour ne jamais conserver durablement de longs extraits de conversation.
+function argumentsPourHistorique(args: unknown): unknown {
+  if (args === null || typeof args !== 'object' || Array.isArray(args)) {
+    return args ?? null;
+  }
+  const copie = { ...(args as Record<string, unknown>) };
+  if (typeof copie.motif === 'string') {
+    copie.motif = borne(copie.motif, 80);
+  }
+  return copie;
 }
 
 function estOutil(nom: string): nom is NomOutil {

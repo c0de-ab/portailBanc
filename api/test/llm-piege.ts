@@ -1,6 +1,6 @@
 import type { AppelOutil, LlmClient, ReponseModele } from '../src/agent/llm-client';
 
-// Le modèle PIÉGÉ, réservé aux tests (CLAUDE.md, section Agent IA) : il obéit à l'attaquant.
+// Le modèle PIÉGÉ, réservé aux tests : il obéit à l'attaquant.
 // Chaque test lui donne un script, c'est-à-dire les appels d'outils à faire, tour après tour, avec des
 // arguments malveillants. Une fois le script joué, il PRÉTEND avoir réussi, comme un modèle
 // manipulé. Les tests vérifient que le serveur ne lui accorde rien pour autant.

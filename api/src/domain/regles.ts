@@ -26,7 +26,7 @@ export type ContexteDemande = {
 
 // Vérifie R1 à R5 et renvoie la liste COMPLÈTE des erreurs, sans lever d'exception.
 // À la soumission, le service transforme cette liste en refus (422) ;
-// sur un brouillon, en avertissements qui ne bloquent rien (CLAUDE.md, règle 1).
+// sur un brouillon, en avertissements qui ne bloquent rien (H23).
 export function verifierRegles(contenu: ContenuDemande, contexte: ContexteDemande): ErreurRegle[] {
   const erreurs: ErreurRegle[] = [];
   const { plafondDemande, dureeJours, motif, justificatifPresent } = contenu;
@@ -111,7 +111,30 @@ export function niveauDeValidation(plafondDemande: number): NiveauDeValidation {
   return plafondDemande <= SEUIL_DECISION_CONSEILLER ? 'CONSEILLER' : 'SUPERVISEUR';
 }
 
-// Les décisions humaines (docs/etats-transitions.md, § 4).
+// H12, H18 : un membre de la banque agit sur un dossier dans un rôle s'il a ce rôle ET si le
+// dossier est dans le périmètre de ce rôle. Le conseiller : les dossiers dont il est le
+// conseiller. Le superviseur : les dossiers de son équipe qui lui ont été transmis (recommandés).
+export type MembreBanque = { id: string; roles: readonly string[]; teamId: string | null };
+export type DossierBanque = {
+  advisorId: string | null;
+  teamId: string | null;
+  recommenderId: string | null;
+};
+
+export function agitDansSonRole(
+  role: NiveauDeValidation,
+  membre: MembreBanque,
+  dossier: DossierBanque,
+): boolean {
+  if (!membre.roles.includes(role)) {
+    return false;
+  }
+  return role === 'CONSEILLER'
+    ? dossier.advisorId === membre.id
+    : dossier.teamId === membre.teamId && dossier.recommenderId !== null;
+}
+
+// Les décisions humaines.
 export type TypeDecision = 'DEMANDE_COMPLEMENT' | 'APPROBATION' | 'REJET' | 'RECOMMANDATION';
 
 export type Decision = {

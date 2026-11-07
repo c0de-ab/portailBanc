@@ -3,16 +3,15 @@ import type { UtilisateurSession } from '../auth/utilisateur-session';
 import { ErreurApi } from '../http/erreur-api';
 import { HistoriqueService } from '../historique/historique.service';
 import { CONSIGNES } from './consignes';
-import { LLM_CLIENT, type LlmClient, type MessageModele } from './llm-client';
+import { DELAI_MODELE_MS, LLM_CLIENT, type LlmClient, type MessageModele } from './llm-client';
 import { DESCRIPTIONS_OUTILS, type ElementReponse } from './outils';
 import { OutilsService } from './outils.service';
 
-// Garde-fous (CLAUDE.md, section Agent IA).
-const DELAI_MODELE_MS = 15_000;
+// Garde-fous de l'agent (le délai de 15 s, DELAI_MODELE_MS, est dans llm-client.ts).
 const APPELS_OUTILS_PAR_MESSAGE = 3;
 // Tours de parole du modèle pour un message : assez pour 3 outils puis la réponse finale.
 const TOURS_MAXIMUM = APPELS_OUTILS_PAR_MESSAGE + 1;
-// Mémoire : les 10 derniers échanges, gardés dans la session seulement (docs/modele-donnees.md § 6).
+// Mémoire : les 10 derniers échanges, gardés dans la session seulement.
 const ECHANGES_EN_MEMOIRE = 10;
 const RESUME_OUTIL_MAXIMUM = 500;
 

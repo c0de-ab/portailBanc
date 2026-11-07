@@ -1,4 +1,4 @@
-// Une règle non respectée, au format des erreurs de l'API (CLAUDE.md, règle 8).
+// Une règle non respectée, au format des erreurs de l'API.
 // `code` : le code de la règle (R1…R14) ou TRANSITION pour une transition impossible.
 // `champ` : le champ concerné, absent quand l'erreur ne porte sur aucun champ.
 // `message` : en français, écrit pour la personne qui lit l'erreur.

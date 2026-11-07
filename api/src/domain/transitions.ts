@@ -1,6 +1,6 @@
 import type { ErreurRegle } from './erreurs';
 
-// Les états métier (colonne requests.statut), exactement comme dans docs/modele-donnees.md.
+// Les états métier (colonne requests.statut), exactement comme dans la base.
 export const STATUTS = [
   'BROUILLON',
   'SOUMISE',
@@ -43,7 +43,7 @@ type Transition = {
 };
 
 // LA table des transitions : la traduction exacte du diagramme des états
-// (docs/etats-transitions.md, § 2). Toute combinaison absente est impossible.
+// Toute combinaison absente est impossible.
 export const TRANSITIONS: readonly Transition[] = [
   // Brouillon et complément : seul le client (ou l'agent pour lui) modifie le contenu.
   { action: 'modifier', depuis: ['BROUILLON'], vers: 'BROUILLON', acteurs: ['CLIENT'] },

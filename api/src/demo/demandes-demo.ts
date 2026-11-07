@@ -4,9 +4,10 @@ import type { BaseService } from '../base/base.service';
 import { ActivationService } from '../demandes/activation.service';
 import { DemandesClientService } from '../demandes/demandes-client.service';
 import { DossiersService } from '../demandes/dossiers.service';
+import { SoumissionService } from '../demandes/soumission.service';
 import { HistoriqueService } from '../historique/historique.service';
 
-// Les demandes de démonstration (docs/modele-donnees.md, § 7), créées PAR LES SERVICES MÉTIER et
+// Les demandes de démonstration, créées PAR LES SERVICES MÉTIER et
 // non par des insertions directes : elles suivent le vrai parcours, et leur historique est
 // identique à celui d'une demande créée dans l'application.
 // - Mehdi : 40 000 DH, soumise, en attente de Karim (scénario 3 : Karim sera refusé, R8).
@@ -15,6 +16,7 @@ import { HistoriqueService } from '../historique/historique.service';
 export async function creerDemandesDemo(base: BaseService, maintenant: Date): Promise<string[]> {
   const historique = new HistoriqueService(base);
   const clients = new DemandesClientService(base, historique);
+  const soumission = new SoumissionService(base, historique);
   const activation = new ActivationService(base, historique, new BanqueService(base));
   const dossiers = new DossiersService(base, historique, activation);
   const creees: string[] = [];
@@ -37,7 +39,7 @@ export async function creerDemandesDemo(base: BaseService, maintenant: Date): Pr
       { plafondDemande, dureeJours: 3, motif },
       maintenant,
     );
-    return clients.soumettre(
+    return soumission.soumettre(
       client,
       demande.id,
       { version: remplie.demande.version, plafondDemande, dureeJours: 3 },

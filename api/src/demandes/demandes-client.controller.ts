@@ -31,14 +31,20 @@ import {
   VersionFormulaireDto,
 } from './demandes-client.dto';
 import { DemandesClientService } from './demandes-client.service';
+import { JustificatifsClientService } from './justificatifs-client.service';
+import { SoumissionService } from './soumission.service';
 
-// Les routes du client. Aucune logique métier ici (CLAUDE.md, règle 2) : le controller lit
+// Les routes du client. Aucune logique métier ici : le controller lit
 // l'identité dans la session, passe la date courante au service et met en forme la réponse.
 @Controller()
 @UseGuards(RolesGuard)
 @Roles('CLIENT')
 export class DemandesClientController {
-  constructor(private readonly demandes: DemandesClientService) {}
+  constructor(
+    private readonly demandes: DemandesClientService,
+    private readonly soumission: SoumissionService,
+    private readonly justificatifs: JustificatifsClientService,
+  ) {}
 
   @Get('comptes')
   async comptes(@UtilisateurConnecte() client: UtilisateurSession) {
@@ -100,7 +106,7 @@ export class DemandesClientController {
     @Body() confirmation: SoumettreDto,
   ) {
     return {
-      demande: vueClient(await this.demandes.soumettre(client, id, confirmation, new Date())),
+      demande: vueClient(await this.soumission.soumettre(client, id, confirmation, new Date())),
     };
   }
 
@@ -142,7 +148,7 @@ export class DemandesClientController {
     @Body() { version }: VersionFormulaireDto,
     @UploadedFile() fichier: FichierRecu | undefined,
   ) {
-    const { demande, avertissements } = await this.demandes.deposerJustificatif(
+    const { demande, avertissements } = await this.justificatifs.deposer(
       client,
       id,
       version,
@@ -159,6 +165,6 @@ export class DemandesClientController {
     @Param('id', ParseUUIDPipe) id: string,
     @Res() res: Response,
   ): Promise<void> {
-    envoyerJustificatif(res, await this.demandes.lireJustificatif(client, id, new Date()));
+    envoyerJustificatif(res, await this.justificatifs.lire(client, id, new Date()));
   }
 }

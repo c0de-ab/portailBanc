@@ -3,7 +3,7 @@ import { executerTransaction } from '../src/base/transaction';
 import { creerComptesDemo } from '../src/demo/comptes-demo';
 import { creerPoolTest, viderBase } from './outils-base';
 
-// Les comptes de démonstration (docs/modele-donnees.md, § 7), sur la vraie base portail_test.
+// Les comptes de démonstration, sur la vraie base portail_test.
 describe('Comptes de démonstration', () => {
   let pool: Pool;
 

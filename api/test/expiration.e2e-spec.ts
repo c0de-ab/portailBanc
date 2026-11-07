@@ -3,6 +3,7 @@ import { BanqueService } from '../src/banque/banque.service';
 import { executerTransaction } from '../src/base/transaction';
 import type { VueDossier } from '../src/demandes/demande';
 import { ExpirationService } from '../src/demandes/expiration.service';
+import { HistoriqueService } from '../src/historique/historique.service';
 import { creerComptesDemo } from '../src/demo/comptes-demo';
 import { demarrerAppTest } from './app-test';
 import { parcours } from './parcours';
@@ -161,6 +162,32 @@ describe('Expiration', () => {
       expect(await etat(active.id)).toMatchObject({ statut: 'EXPIREE' });
       expect(await desactivations()).toBe(1);
     });
+  });
+
+  it('une erreur inattendue après la banque n’interrompt pas la commande : la demande est reprise ensuite', async () => {
+    const active = await demandeActive();
+    const dateSimulee = new Date(active.echeance.getTime() + UNE_HEURE);
+    // La base refuse l'écriture de l'événement d'expiration, une fois : la transaction est
+    // annulée, alors que la banque a déjà rétabli le plafond.
+    const ecrire = jest
+      .spyOn(appTest.app.get(HistoriqueService), 'ecrire')
+      .mockRejectedValueOnce(new Error('connexion perdue'));
+
+    try {
+      const premier = await expiration.expirer(dateSimulee, new Date());
+
+      expect(premier).toEqual({ expirees: 0, enEchec: 1 });
+      expect((await etat(active.id)).statut).toBe('ACTIVE');
+      expect(await plafondCourant()).toBe(10_000);
+    } finally {
+      ecrire.mockRestore();
+    }
+
+    // Le passage suivant rejoue la même clé : la banque renvoie son résultat (H16).
+    const reprise = await expiration.expirer(dateSimulee, new Date());
+    expect(reprise).toEqual({ expirees: 1, enEchec: 0 });
+    expect((await etat(active.id)).statut).toBe('EXPIREE');
+    expect(await desactivations()).toBe(1);
   });
 
   it('seules les demandes Actives échues sont concernées', async () => {

@@ -1,7 +1,7 @@
 import { IsInt, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
 import type { DescriptionOutil } from './llm-client';
 
-// Les QUATRE outils de l'agent, et aucun autre (CLAUDE.md, section Agent IA) : aucun outil
+// Les QUATRE outils de l'agent, et aucun autre : aucun outil
 // n'approuve, n'active, ne soumet ni ne modifie des droits.
 
 // Les arguments, validés comme le corps d'une requête : un champ non déclaré (statut, version,
@@ -114,7 +114,7 @@ export type CarteConfirmation = {
   justificatifNom: string | null;
 };
 
-// Ce que l'interface affiche, chaque type autrement (CLAUDE.md, section Agent IA).
+// Ce que l'interface affiche, chaque type autrement.
 export type ElementReponse =
   // `outil` est un texte : un outil inconnu demandé par le modèle est aussi montré (refusé).
   | { type: 'donnee'; outil: string; contenu: unknown }

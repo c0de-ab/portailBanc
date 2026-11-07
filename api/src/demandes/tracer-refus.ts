@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import type { UtilisateurSession } from '../auth/utilisateur-session';
 import { ErreurApi } from '../http/erreur-api';
 import type { HistoriqueService } from '../historique/historique.service';
@@ -8,6 +9,10 @@ import type { HistoriqueService } from '../historique/historique.service';
 // `travail`, y compris le chargement avec le filtre de périmètre : un accès hors périmètre est
 // tracé lui aussi. L'identifiant visé va dans `details`, jamais dans request_id : un dossier
 // hors périmètre n'est pas rattaché à l'historique de quelqu'un d'autre.
+// Si l'écriture du refus échoue, l'échec est journalisé, mais le client reçoit toujours l'erreur
+// d'origine (404, 409, 403…) : un incident de traçage ne la transforme jamais en 500.
+const journal = new Logger('tracerLesRefus');
+
 export async function tracerLesRefus<T>(
   historique: HistoriqueService,
   acteur: UtilisateurSession,
@@ -20,12 +25,18 @@ export async function tracerLesRefus<T>(
     return await travail();
   } catch (erreur) {
     if (erreur instanceof ErreurApi) {
-      await historique.ecrire({
-        action: 'REFUS',
-        acteurId: acteur.id,
-        details: { action, cible, codes: erreur.erreurs.map((e) => e.code) },
-        date: maintenant,
-      });
+      try {
+        await historique.ecrire({
+          action: 'REFUS',
+          acteurId: acteur.id,
+          details: { action, cible, codes: erreur.erreurs.map((e) => e.code) },
+          date: maintenant,
+        });
+      } catch (echecTrace) {
+        journal.error(
+          `Refus non tracé (${action}) : ${echecTrace instanceof Error ? echecTrace.message : String(echecTrace)}`,
+        );
+      }
     }
     throw erreur;
   }

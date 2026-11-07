@@ -15,7 +15,7 @@ export class VersionDto {
 }
 
 export class ModifierDemandeDto extends VersionDto {
-  // Un montant décimal est refusé dès la validation des entrées (docs/modele-donnees.md).
+  // Un montant décimal est refusé dès la validation des entrées.
   @IsOptional()
   @IsInt({ message: 'Le plafond demandé doit être un nombre entier de dirhams.' })
   plafondDemande?: number | null;

@@ -18,7 +18,7 @@ import { vueDossier } from './demande';
 import { DecisionDto, RecommandationDto } from './dossiers.dto';
 import { type ActionDecision, DossiersService } from './dossiers.service';
 
-// Les routes du personnel de la banque. Aucune logique métier ici (CLAUDE.md, règle 2).
+// Les routes du personnel de la banque. Aucune logique métier ici.
 @Controller('dossiers')
 @UseGuards(RolesGuard)
 @Roles('CONSEILLER', 'SUPERVISEUR')

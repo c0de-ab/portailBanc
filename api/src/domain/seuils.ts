@@ -1,4 +1,4 @@
-// Les seuils des règles fictives (docs/etats-transitions.md, § 1), nommés une seule fois.
+// Les seuils des règles fictives, nommés une seule fois.
 // Le plafond initial n'est pas ici : il est lu sur le compte (accounts.plafond_initial, H11).
 
 // R1 : le plafond demandé est au plus égal à ce montant.

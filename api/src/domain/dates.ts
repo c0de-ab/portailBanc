@@ -1,5 +1,5 @@
 // Calculs de dates du domaine. Les dates sont toujours reçues en paramètre :
-// jamais d'heure courante lue ici (CLAUDE.md, règle 9).
+// jamais d'heure courante lue ici.
 
 const MILLISECONDES_PAR_HEURE = 60 * 60 * 1000;
 

@@ -1,6 +1,10 @@
-// Le contrat entre l'agent et un modèle de langage (CLAUDE.md, section Agent IA). Trois
+// Le contrat entre l'agent et un modèle de langage. Trois
 // implémentations : connectée (API Groq), simulée et déterministe (par défaut), et un modèle
 // piégé réservé aux tests (api/test/). Le reste de l'agent ne connaît que ce contrat.
+
+// Garde-fou : un appel au modèle ne dure jamais plus de 15 s. L'agent coupe l'attente, et le
+// client Groq interrompt aussi sa requête HTTP, avec cette même valeur.
+export const DELAI_MODELE_MS = 15_000;
 
 // Une demande d'appel d'outil faite par le modèle. Les arguments sont des données NON FIABLES :
 // ils sont validés avant tout usage.

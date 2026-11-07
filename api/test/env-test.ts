@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { parseEnv } from 'node:util';
 
-// Charge explicitement api/.env.test (CLAUDE.md, section Intégration continue).
+// Charge explicitement api/.env.test.
 // process.loadEnvFile ne convient pas : Jest donne à chaque fichier de test sa propre copie
 // de process.env, que loadEnvFile ne modifie pas. On copie donc les valeurs à la main,
 // sans écraser une variable déjà définie (dans la CI, DATABASE_URL vient du workflow).

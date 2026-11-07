@@ -1,19 +1,19 @@
-import type {
-  AppelOutil,
-  DescriptionOutil,
-  LlmClient,
-  MessageModele,
-  ReponseModele,
+import {
+  type AppelOutil,
+  DELAI_MODELE_MS,
+  type DescriptionOutil,
+  type LlmClient,
+  type MessageModele,
+  type ReponseModele,
 } from './llm-client';
 
 // Le mode CONNECTÉ (LLM_MODE=connecte) : l'API Groq, au format compatible OpenAI, appelée par
-// fetch (intégré à Node, sans dépendance). Voir docs/stack-technique.md, « Intégration IA ».
+// fetch (intégré à Node, sans dépendance).
 // Cette classe ne fait que traduire : la boucle, les garde-fous et TOUS les contrôles restent
 // dans l'agent et dans les services, quoi que le modèle réponde.
 
 const ADRESSE = 'https://api.groq.com/openai/v1/chat/completions';
-const DELAI_MS = 15_000;
-// CLAUDE.md, section Agent IA : 1 024 tokens de réponse au plus.
+// Garde-fou : 1 024 tokens de réponse au plus.
 const TOKENS_MAXIMUM = 1024;
 
 // Le format des messages de l'API (compatible OpenAI), réduit à ce que l'agent utilise.
@@ -48,7 +48,7 @@ export class LlmGroq implements LlmClient {
   constructor(
     private readonly cle: string,
     private readonly modele: string,
-    // Remplaçable dans les tests : aucun test ne fait d'appel réseau (CLAUDE.md).
+    // Remplaçable dans les tests : aucun test ne fait d'appel réseau.
     private readonly appelHttp: typeof fetch = fetch,
   ) {}
 
@@ -75,7 +75,7 @@ export class LlmGroq implements LlmClient {
           // Des réponses régulières (une valeur au-dessus de 0, comme le conseille Groq).
           temperature: 0.2,
         }),
-        signal: AbortSignal.timeout(DELAI_MS),
+        signal: AbortSignal.timeout(DELAI_MODELE_MS),
       });
     } catch (erreur) {
       const delai = erreur instanceof Error && erreur.name === 'TimeoutError';

@@ -14,7 +14,7 @@ import { IsIn } from 'class-validator';
 import { Roles, RolesGuard } from '../auth/guards';
 import { BanqueService, type ModeBanque, MODES_BANQUE } from '../banque/banque.service';
 
-// Les routes /api/demo/... n'existent que si DEMO_MODE=true (CLAUDE.md, section Sécurité).
+// Les routes /api/demo/... n'existent que si DEMO_MODE=true.
 // Lue à chaque requête : hors démonstration, la route répond exactement comme une route
 // inexistante (404), avant même le contrôle de connexion.
 @Injectable()

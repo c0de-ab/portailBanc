@@ -7,17 +7,28 @@ import { DemandesClientService } from './demandes-client.service';
 import { DossiersController } from './dossiers.controller';
 import { DossiersService } from './dossiers.service';
 import { ExpirationService } from './expiration.service';
+import { JustificatifsClientService } from './justificatifs-client.service';
+import { SoumissionService } from './soumission.service';
 
 @Module({
   imports: [BanqueModule],
   controllers: [DemandesClientController, DossiersController],
   providers: [
     DemandesClientService,
+    SoumissionService,
+    JustificatifsClientService,
     DossiersService,
     ActivationService,
     ExpirationService,
     HistoriqueService,
   ],
-  exports: [DemandesClientService, DossiersService, ActivationService, ExpirationService],
+  // HistoriqueService est exporté : l'agent écrit dans le MÊME historique, une seule instance.
+  exports: [
+    DemandesClientService,
+    DossiersService,
+    ActivationService,
+    ExpirationService,
+    HistoriqueService,
+  ],
 })
 export class DemandesModule {}

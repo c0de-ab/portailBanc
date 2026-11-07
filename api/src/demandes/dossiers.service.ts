@@ -2,8 +2,13 @@ import { HttpStatus, Injectable } from '@nestjs/common';
 import { DatabaseError } from 'pg';
 import type { Role, UtilisateurSession } from '../auth/utilisateur-session';
 import { BaseService } from '../base/base.service';
-import { type TypeDecision, verifierDecision } from '../domain/regles';
-import { type Action, etatApres } from '../domain/transitions';
+import {
+  agitDansSonRole,
+  type NiveauDeValidation,
+  type TypeDecision,
+  verifierDecision,
+} from '../domain/regles';
+import { type Acteur, type Action, etatApres } from '../domain/transitions';
 import { ErreurApi } from '../http/erreur-api';
 import { HistoriqueService } from '../historique/historique.service';
 import {
@@ -11,7 +16,14 @@ import {
   type JustificatifATelecharger,
 } from '../justificatifs/justificatif';
 import { ActivationService } from './activation.service';
-import { COLONNES_DEMANDE, type Demande, type LigneDemande, versDemande } from './demande';
+import {
+  COLONNES_DEMANDE,
+  type Demande,
+  type LigneDemande,
+  lireRevisions,
+  type Revision,
+  versDemande,
+} from './demande';
 import { introuvable, refuser, versionPerimee } from './refus';
 import { tracerLesRefus } from './tracer-refus';
 
@@ -32,15 +44,12 @@ const TYPE_DU_DOMAINE: Record<ActionDecision, TypeDecision> = {
 export type DetailDossier = {
   demande: Demande;
   client: { nom: string; dossierComplet: boolean };
-  compte: { numero: string; plafondInitial: number };
-  revisions: {
-    revisionNo: number;
-    plafondDemande: number;
-    dureeJours: number;
-    motif: string;
-    justificatifNom: string | null;
-    soumiseLe: Date;
-  }[];
+  // plafondCourant : ce que la banque applique réellement (bank_limits), jamais déduit du statut.
+  compte: { numero: string; plafondInitial: number; plafondCourant: number };
+  revisions: Revision[];
+  // Les décisions que CET utilisateur peut prendre maintenant, calculées par les mêmes règles que
+  // `decider` : l'interface les affiche sans les recalculer. Le serveur reste seul juge au clic.
+  actions: ActionDecision[];
   // Le personnel voit TOUTES les décisions, recommandations comprises.
   decisions: {
     type: string;
@@ -61,7 +70,7 @@ export type DetailDossier = {
   }[];
 };
 
-// Le traitement des dossiers par le conseiller et le superviseur (docs/etats-transitions.md, § 4).
+// Le traitement des dossiers par le conseiller et le superviseur.
 @Injectable()
 export class DossiersService {
   constructor(
@@ -89,25 +98,16 @@ export class DossiersService {
         dossier_complet: boolean;
         numero: string;
         plafond_initial: number;
+        plafond_courant: number;
       }>(
-        `SELECT u.display_name AS nom, c.dossier_complet, a.numero, a.plafond_initial
+        `SELECT u.display_name AS nom, c.dossier_complet, a.numero, a.plafond_initial,
+                b.plafond_courant
            FROM accounts a
            JOIN clients c ON c.id = a.client_id
            JOIN users u ON u.id = c.user_id
+           JOIN bank_limits b ON b.numero = a.numero
           WHERE a.id = $1`,
         [demande.accountId],
-      );
-      const revisions = await this.base.requete<{
-        revision_no: number;
-        plafond_demande: number;
-        duree_jours: number;
-        motif: string;
-        justificatif_nom: string | null;
-        created_at: Date;
-      }>(
-        `SELECT revision_no, plafond_demande, duree_jours, motif, justificatif_nom, created_at
-           FROM request_revisions WHERE request_id = $1 ORDER BY revision_no`,
-        [id],
       );
       const decisions = await this.base.requete<{
         type: string;
@@ -143,15 +143,13 @@ export class DossiersService {
       return {
         demande,
         client: { nom: ligne.nom, dossierComplet: ligne.dossier_complet },
-        compte: { numero: ligne.numero, plafondInitial: ligne.plafond_initial },
-        revisions: revisions.rows.map((r) => ({
-          revisionNo: r.revision_no,
-          plafondDemande: r.plafond_demande,
-          dureeJours: r.duree_jours,
-          motif: r.motif,
-          justificatifNom: r.justificatif_nom,
-          soumiseLe: r.created_at,
-        })),
+        compte: {
+          numero: ligne.numero,
+          plafondInitial: ligne.plafond_initial,
+          plafondCourant: ligne.plafond_courant,
+        },
+        actions: actionsPossibles(agent, demande),
+        revisions: await lireRevisions(this.base, id),
         decisions: decisions.rows.map((d) => ({
           type: d.type,
           acteur: d.acteur,
@@ -218,12 +216,8 @@ export class DossiersService {
       // H18 : le rôle de la décision est déduit de l'état, jamais choisi par l'utilisateur.
       // Il faut l'avoir, ET être dans le périmètre de ce rôle pour ce dossier : le conseiller
       // du dossier sur une demande soumise, un superviseur de son équipe sur une demande transmise.
-      const role = transition.acteurs[0] as 'CONSEILLER' | 'SUPERVISEUR';
-      const dansSonPerimetre =
-        role === 'CONSEILLER'
-          ? demande.advisorId === agent.id
-          : demande.teamId === agent.teamId && demande.recommenderId !== null;
-      if (!agent.roles.includes(role) || !dansSonPerimetre) {
+      const role = roleDeLaDecision(transition.acteurs);
+      if (!agitDansSonRole(role, agent, demande)) {
         throw new ErreurApi(HttpStatus.FORBIDDEN, [
           {
             code: 'ROLE',
@@ -245,72 +239,88 @@ export class DossiersService {
         throw refuser(erreurs);
       }
 
-      const typeEnBase =
-        action === 'recommander' ? `RECOMMANDATION_${avis}` : TYPE_DU_DOMAINE[action];
-      const recommenderId = action === 'recommander' ? agent.id : demande.recommenderId;
-      // Couplage (docs/etats-transitions.md, § 3) : l'approbation met l'activation En attente,
-      // dans la même transaction ; l'appel à la banque est fait juste après le COMMIT.
-      const activationStatut = action === 'approuver' ? 'EN_ATTENTE' : demande.activationStatut;
-
-      let decidee: Demande;
-      try {
-        decidee = await this.base.transaction(async (tx) => {
-          const { rows } = await tx.query<LigneDemande>(
-            `UPDATE requests
-                SET statut = $4, version = version + 1, recommender_id = $5,
-                    activation_statut = $6, updated_at = $7
-              WHERE id = $1 AND version = $2 AND statut = $3
-              RETURNING ${COLONNES_DEMANDE}`,
-            [
-              id,
-              version,
-              demande.statut,
-              transition.vers,
-              recommenderId,
-              activationStatut,
-              maintenant,
-            ],
-          );
-          if (!rows[0]) {
-            throw versionPerimee();
-          }
-          const resultat = versDemande(rows[0]);
-
-          await tx.query(
-            `INSERT INTO decisions
-               (request_id, type, actor_id, actor_role, motif, request_version, revision_no, created_at)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-            [id, typeEnBase, agent.id, role, motif, version, demande.revisionCourante, maintenant],
-          );
-          await this.historique.ecrire(
-            {
-              action: typeEnBase,
-              acteurId: agent.id,
-              requestId: id,
-              reference: resultat.reference,
-              requestVersion: resultat.version,
-              motif,
-              date: maintenant,
-            },
-            tx,
-          );
-          return resultat;
-        });
-      } catch (erreur) {
-        // Une seule décision par version : la seconde de deux décisions simultanées.
-        if (
-          erreur instanceof DatabaseError &&
-          erreur.constraint === 'decisions_request_id_request_version_key'
-        ) {
-          throw versionPerimee();
-        }
-        throw erreur;
-      }
+      const decidee = await this.enregistrerDecision(
+        agent,
+        demande,
+        action,
+        transition.vers,
+        role,
+        motif,
+        avis,
+        maintenant,
+      );
 
       // Après une approbation : l'activation dans la banque simulée. La réponse indique son
       // résultat (Active, ou Approuvée avec l'activation en échec ou inconnue).
       return action === 'approuver' ? this.activation.activer(id, maintenant) : decidee;
     });
+  }
+
+  // Une seule transaction pour la transition, la décision et l'événement (règle 6). Le UPDATE
+  // est conditionné à la version et au statut lus (règle 5) : 409 si un autre l'a modifié.
+  private async enregistrerDecision(
+    agent: UtilisateurSession,
+    demande: Demande,
+    action: ActionDecision,
+    vers: Demande['statut'],
+    role: NiveauDeValidation,
+    motif: string,
+    avis: Avis,
+    maintenant: Date,
+  ): Promise<Demande> {
+    const { id, version } = demande;
+    const typeEnBase =
+      action === 'recommander' ? `RECOMMANDATION_${avis}` : TYPE_DU_DOMAINE[action];
+    const recommenderId = action === 'recommander' ? agent.id : demande.recommenderId;
+    // Couplage : l'approbation met l'activation En attente,
+    // dans la même transaction ; l'appel à la banque est fait juste après le COMMIT.
+    const activationStatut = action === 'approuver' ? 'EN_ATTENTE' : demande.activationStatut;
+
+    try {
+      return await this.base.transaction(async (tx) => {
+        const { rows } = await tx.query<LigneDemande>(
+          `UPDATE requests
+                SET statut = $4, version = version + 1, recommender_id = $5,
+                    activation_statut = $6, updated_at = $7
+              WHERE id = $1 AND version = $2 AND statut = $3
+              RETURNING ${COLONNES_DEMANDE}`,
+          [id, version, demande.statut, vers, recommenderId, activationStatut, maintenant],
+        );
+        if (!rows[0]) {
+          throw versionPerimee();
+        }
+        const resultat = versDemande(rows[0]);
+
+        await tx.query(
+          `INSERT INTO decisions
+               (request_id, type, actor_id, actor_role, motif, request_version, revision_no, created_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+          [id, typeEnBase, agent.id, role, motif, version, demande.revisionCourante, maintenant],
+        );
+        await this.historique.ecrire(
+          {
+            action: typeEnBase,
+            acteurId: agent.id,
+            requestId: id,
+            reference: resultat.reference,
+            requestVersion: resultat.version,
+            motif,
+            date: maintenant,
+          },
+          tx,
+        );
+        return resultat;
+      });
+    } catch (erreur) {
+      // Une seule décision par version : la seconde de deux décisions simultanées.
+      if (
+        erreur instanceof DatabaseError &&
+        erreur.constraint === 'decisions_request_id_request_version_key'
+      ) {
+        throw versionPerimee();
+      }
+      throw erreur;
+    }
   }
 
   // « Relancer » (H12, H15) : une action utilisateur, filtrée par le périmètre et tracée, mais
@@ -324,13 +334,10 @@ export class DossiersService {
         throw refuser([transition.erreur]);
       }
       // H12 : le conseiller du dossier, ou un superviseur de l'équipe si le dossier lui a été transmis.
-      const conseillerDuDossier =
-        agent.roles.includes('CONSEILLER') && demande.advisorId === agent.id;
-      const superviseurDeLEquipe =
-        agent.roles.includes('SUPERVISEUR') &&
-        demande.teamId === agent.teamId &&
-        demande.recommenderId !== null;
-      if (!conseillerDuDossier && !superviseurDeLEquipe) {
+      if (
+        !agitDansSonRole('CONSEILLER', agent, demande) &&
+        !agitDansSonRole('SUPERVISEUR', agent, demande)
+      ) {
         throw new ErreurApi(HttpStatus.FORBIDDEN, [
           {
             code: 'ROLE',
@@ -379,7 +386,39 @@ export class DossiersService {
   }
 }
 
-// R14 (docs/modele-donnees.md, § 5) : le portefeuille du conseiller, ou les dossiers TRANSMIS à
+// Les décisions possibles pour cet utilisateur : transition permise, rôle et périmètre (H18),
+// puis R8 et R9. Le motif (R10) n'est pas encore saisi : il n'entre pas dans ce calcul.
+function actionsPossibles(agent: UtilisateurSession, demande: Demande): ActionDecision[] {
+  const actions: ActionDecision[] = ['demanderComplement', 'approuver', 'rejeter', 'recommander'];
+  return actions.filter((action) => {
+    const transition = etatApres(action, demande.statut);
+    if (!transition.possible) {
+      return false;
+    }
+    const role = roleDeLaDecision(transition.acteurs);
+    if (!agitDansSonRole(role, agent, demande)) {
+      return false;
+    }
+    const erreurs = verifierDecision(
+      { type: TYPE_DU_DOMAINE[action], role, acteurId: agent.id, motif: 'à saisir' },
+      { plafondDemande: demande.plafondDemande ?? 0, recommenderId: demande.recommenderId },
+    );
+    return erreurs.length === 0;
+  });
+}
+
+// Le rôle sous lequel une décision est prise : celui que la table des transitions attend.
+function roleDeLaDecision(acteurs: readonly Acteur[]): NiveauDeValidation {
+  const role = acteurs.find(
+    (a): a is NiveauDeValidation => a === 'CONSEILLER' || a === 'SUPERVISEUR',
+  );
+  if (!role) {
+    throw new Error('Table des transitions : une décision doit avoir un acteur de la banque.');
+  }
+  return role;
+}
+
+// R14 : le portefeuille du conseiller, ou les dossiers TRANSMIS à
 // l'équipe du superviseur, et l'union des deux pour un double rôle (H18). Un texte fixe : les
 // valeurs passent par $1 à $4, jamais par concaténation.
 const FILTRE_PERIMETRE = `(

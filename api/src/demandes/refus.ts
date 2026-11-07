@@ -2,7 +2,7 @@ import { HttpStatus } from '@nestjs/common';
 import type { CodeErreur, ErreurRegle } from '../domain/erreurs';
 import { ErreurApi } from '../http/erreur-api';
 
-// Le statut HTTP de chaque code de règle (CLAUDE.md, règle 8), en un seul endroit.
+// Le statut HTTP de chaque code de règle, en un seul endroit.
 const STATUT_PAR_CODE: Record<CodeErreur | 'R6' | 'R7' | 'R11' | 'R14', number> = {
   R1: HttpStatus.UNPROCESSABLE_ENTITY,
   R2: HttpStatus.UNPROCESSABLE_ENTITY,
@@ -31,7 +31,7 @@ export function refuser(
   return new ErreurApi(STATUT_PAR_CODE[erreurs[0].code], erreurs);
 }
 
-// R14 : hors périmètre ou inexistant, la même réponse (CLAUDE.md, règle 4).
+// R14 : hors périmètre ou inexistant, la même réponse.
 export function introuvable(): ErreurApi {
   return refuser([{ code: 'R14', message: 'Demande introuvable.' }]);
 }

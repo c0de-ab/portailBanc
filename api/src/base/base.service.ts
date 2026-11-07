@@ -3,7 +3,7 @@ import type { Pool, PoolClient, QueryResult, QueryResultRow } from 'pg';
 import { creerPool } from './pool';
 import { executerTransaction } from './transaction';
 
-// Accès à PostgreSQL en SQL brut (CLAUDE.md, règle 13).
+// Accès à PostgreSQL en SQL brut.
 // Les requêtes sont toujours paramétrées : `valeurs` remplit $1, $2…
 // Ne jamais construire `texte` en y concaténant une valeur.
 @Injectable()

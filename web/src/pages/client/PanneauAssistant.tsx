@@ -5,6 +5,7 @@ import { useAssistant } from '../../assistant';
 import { useSession } from '../../session';
 import {
   enDirhams,
+  enJours,
   libelleClient,
   type CarteConfirmation,
   type Compte,
@@ -12,7 +13,7 @@ import {
   type ElementAgent,
   type ErreurDetaillee,
 } from '../../types';
-import { Etat, GrandMontant, ListeErreurs } from '../../composants';
+import { erreursDe, Etat, GrandMontant, ListeErreurs } from '../../composants';
 
 // Le chat du client avec l'agent, dans un panneau ouvert à côté de la page en cours. Trois
 // natures de message, présentées différemment :
@@ -33,6 +34,8 @@ export function PanneauAssistant() {
   const initiale = useSession().utilisateur?.displayName.charAt(0) ?? '';
   const saisie = useRef<HTMLTextAreaElement>(null);
   const fil = useRef<HTMLOListElement>(null);
+  // L'aide « Lire les messages », dépliée par le bouton « i » à côté du titre.
+  const [reperes, setReperes] = useState(false);
 
   // À l'ouverture, le curseur va dans le champ de saisie.
   useEffect(() => {
@@ -76,23 +79,39 @@ export function PanneauAssistant() {
       hidden={!ouvert}
     >
       <header className="panneau-entete">
-        <h2 id="assistant-titre" className="h3">
-          Assistant
-        </h2>
-        <div className="rangee ecart-8">
+        <div className="panneau-titre">
+          <h2 id="assistant-titre" className="h3">
+            Assistant
+          </h2>
+          <button
+            type="button"
+            className="panneau-icone panneau-info"
+            aria-label="Comment lire les messages"
+            title="Comment lire les messages"
+            aria-expanded={reperes}
+            aria-controls="reperes-assistant"
+            onClick={() => setReperes((r) => !r)}
+          >
+            {ICONE_INFO}
+          </button>
+        </div>
+        <div className="rangee ecart-4">
           {echanges.length > 0 && (
             <button
               type="button"
-              className="btn btn-secondaire panneau-effacer"
+              className="panneau-effacer"
+              title="Effacer la conversation"
+              aria-label="Effacer la conversation"
               disabled={envoi}
               onClick={() => void effacer().then(() => saisie.current?.focus())}
             >
-              Effacer la conversation
+              {ICONE_CORBEILLE}
+              Effacer
             </button>
           )}
           <button
             type="button"
-            className="panneau-masquer"
+            className="panneau-icone"
             aria-label="Masquer l’assistant"
             title="Masquer l’assistant (Ctrl K)"
             onClick={fermer}
@@ -102,8 +121,8 @@ export function PanneauAssistant() {
         </div>
       </header>
 
-      <details className="reperes">
-        <summary>Lire les messages</summary>
+      <section id="reperes-assistant" className="reperes" hidden={!reperes}>
+        <h3 className="reperes-titre">Lire les messages</h3>
         <ul className="colonne ecart-0">
           <li className="specimen">
             <span className="echantillon echantillon-client" aria-hidden="true" />
@@ -149,7 +168,7 @@ export function PanneauAssistant() {
             </span>
           </li>
         </ul>
-      </details>
+      </section>
 
       <ol ref={fil} className="fil-messages panneau-messages" aria-live="polite">
         {echanges.length === 0 && (
@@ -240,6 +259,26 @@ export function PanneauAssistant() {
   );
 }
 
+// Les pictogrammes de l'en-tête du panneau, dessinés au trait, décoratifs.
+const ICONE_INFO = (
+  <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+    <circle cx="9" cy="9" r="7" fill="none" stroke="currentColor" strokeWidth="1.5" />
+    <path d="M9 8.2v4.3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    <circle cx="9" cy="5.6" r="1" fill="currentColor" />
+  </svg>
+);
+const ICONE_CORBEILLE = (
+  <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+    <path
+      d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.6 8.5h5.8l.6-8.5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
 // Le pictogramme « panneau latéral » du bouton qui masque l'assistant.
 const ICONE_PANNEAU = (
   <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
@@ -380,9 +419,7 @@ function Donnee({ outil, contenu }: { outil: string; contenu: unknown }) {
         </p>
         <p className="t15 muted poids-400">
           {d.plafondDemande === null ? 'Plafond non renseigné' : enDirhams(d.plafondDemande)},{' '}
-          {d.dureeJours === null
-            ? 'durée non renseignée'
-            : `${d.dureeJours} jour${d.dureeJours > 1 ? 's' : ''}`}
+          {d.dureeJours === null ? 'durée non renseignée' : enJours(d.dureeJours)}
           {d.justificatifNom && `, justificatif ${d.justificatifNom}`}
         </p>
         {avertissements.length > 0 && (
@@ -431,9 +468,7 @@ function Carte({ carte }: { carte: CarteConfirmation }) {
                   'La demande a changé depuis que cette carte a été préparée. Demandez une nouvelle carte à l’assistant, ou vérifiez la demande dans le formulaire.',
               },
             ]
-          : e instanceof ErreurApi
-            ? e.erreurs
-            : [{ code: 'INCONNUE', message: 'Le serveur est injoignable.' }],
+          : erreursDe(e),
       );
     }
   }
@@ -453,9 +488,7 @@ function Carte({ carte }: { carte: CarteConfirmation }) {
           <dl className="coffre-encart faits faits-ligne carte-faits">
             <div>
               <dt>Durée</dt>
-              <dd>
-                {carte.dureeJours} jour{carte.dureeJours > 1 ? 's' : ''}
-              </dd>
+              <dd>{enJours(carte.dureeJours)}</dd>
             </div>
             <div>
               <dt>Motif</dt>

@@ -3,7 +3,7 @@ import { HttpStatus } from '@nestjs/common';
 import type { Response } from 'express';
 import { ErreurApi } from '../http/erreur-api';
 
-// Le justificatif fictif (CLAUDE.md, section Sécurité) : 2 Mo maximum, PDF, JPEG ou PNG.
+// Le justificatif fictif : 2 Mo maximum, PDF, JPEG ou PNG.
 // Seule sa présence est contrôlée (R4) ; il n'est jamais transmis au modèle IA.
 
 export const TAILLE_MAXIMUM = 2 * 1024 * 1024;

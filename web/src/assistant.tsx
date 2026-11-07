@@ -1,4 +1,12 @@
-import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import { api, ErreurApi } from './api';
 import { useSession } from './session';
 import type { ElementAgent } from './types';
@@ -52,6 +60,13 @@ export function FournisseurAssistant({ children }: { children: ReactNode }) {
     setMessage('');
   }
 
+  // L'utilisateur connecté MAINTENANT : une réponse arrivée après une déconnexion, ou après la
+  // connexion d'un autre compte, est ignorée au lieu de s'afficher chez lui.
+  const utilisateurCourant = useRef(idUtilisateur);
+  useEffect(() => {
+    utilisateurCourant.current = idUtilisateur;
+  }, [idUtilisateur]);
+
   const ouvrir = useCallback((question?: string) => {
     if (document.activeElement instanceof HTMLElement) {
       declencheur.current = document.activeElement;
@@ -99,17 +114,24 @@ export function FournisseurAssistant({ children }: { children: ReactNode }) {
       if (propre === '' || envoi) {
         return;
       }
+      const auteur = idUtilisateur;
       setEchanges((e) => [...e, { de: 'client', texte: propre }]);
       setMessage('');
       setEnvoi(true);
       try {
         const { elements } = await api.envoyerMessage(propre);
+        if (utilisateurCourant.current !== auteur) {
+          return;
+        }
         setEchanges((e) => [...e, { de: 'agent', elements }]);
         // Une action réalisée (brouillon enregistré) change les données de la page.
         if (elements.some((element) => element.type === 'action')) {
           donneesModifiees();
         }
       } catch (e) {
+        if (utilisateurCourant.current !== auteur) {
+          return;
+        }
         const texteErreur =
           e instanceof ErreurApi && e.statut === 503
             ? 'L’assistant est indisponible pour le moment. Vous pouvez faire votre demande avec le formulaire, qui reste utilisable.'
@@ -121,7 +143,7 @@ export function FournisseurAssistant({ children }: { children: ReactNode }) {
         setEnvoi(false);
       }
     },
-    [envoi, donneesModifiees],
+    [envoi, idUtilisateur, donneesModifiees],
   );
 
   return (

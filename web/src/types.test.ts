@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { uneDemande, unDossier } from './test/fabriques';
-import { enDirhams, libelleClient, libelleDossier, libelleRole, type StatutDemande } from './types';
+import {
+  enDirhams,
+  enJours,
+  libelleClient,
+  libelleDossier,
+  libelleRole,
+  type StatutDemande,
+} from './types';
 
 const STATUTS: StatutDemande[] = [
   'BROUILLON',
@@ -77,5 +84,12 @@ describe('libelleRole', () => {
     expect(libelleRole(['SUPERVISEUR'])).toBe('Superviseur');
     expect(libelleRole(['CONSEILLER'])).toBe('Conseiller');
     expect(libelleRole(['CLIENT'])).toBe('Client');
+  });
+});
+
+describe('enJours', () => {
+  it('accorde le mot jour', () => {
+    expect(enJours(1)).toBe('1 jour');
+    expect(enJours(3)).toBe('3 jours');
   });
 });

@@ -1,4 +1,4 @@
-# Intégration continue : voir la section « Intégration continue » de CLAUDE.md.
+# Intégration continue : lint, types, compilation et tests de l'API et du frontend, puis l'image Docker.
 # Aucun secret n'est nécessaire : l'IA tourne en mode simulé.
 name: CI
 

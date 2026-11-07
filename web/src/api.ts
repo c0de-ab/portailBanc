@@ -13,7 +13,7 @@ import type {
 // Tous les appels à l'API passent par ici. URL relatives : même origine en production,
 // redirection par Vite en développement. Le cookie de session suit tout seul (même origine).
 
-// Une réponse en erreur, au format { erreurs } de l'API (CLAUDE.md, règle 8).
+// Une réponse en erreur, au format { erreurs } de l'API.
 export class ErreurApi extends Error {
   constructor(
     readonly statut: number,

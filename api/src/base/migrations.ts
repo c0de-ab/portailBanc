@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import type { Pool } from 'pg';
 import { executerTransaction } from './transaction';
 
-// Applique les migrations SQL (docs/modele-donnees.md, § 8).
+// Applique les migrations SQL.
 // Un fichier s'appelle NNN_nom.sql ; il est appliqué une seule fois, dans l'ordre des numéros.
 const FORMAT_NOM = /^\d{3}_[a-z0-9_]+\.sql$/;
 

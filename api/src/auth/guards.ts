@@ -11,7 +11,7 @@ import type { Request } from 'express';
 import { ErreurApi } from '../http/erreur-api';
 import type { Role, UtilisateurSession } from './utilisateur-session';
 
-// L'identité vient UNIQUEMENT de la session (CLAUDE.md, règle 3) : jamais du corps de la
+// L'identité vient UNIQUEMENT de la session : jamais du corps de la
 // requête, d'un paramètre d'URL ou du modèle IA.
 function utilisateurDeLaSession(contexte: ExecutionContext): UtilisateurSession | undefined {
   return contexte.switchToHttp().getRequest<Request>().session?.utilisateur;

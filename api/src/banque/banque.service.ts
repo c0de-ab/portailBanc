@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { DatabaseError } from 'pg';
 import { BaseService } from '../base/base.service';
 
-// La banque simulée (docs/modele-donnees.md, § 3). Elle n'écrit QUE dans bank_limits et
+// La banque simulée. Elle n'écrit QUE dans bank_limits et
 // bank_operations, dans ses propres transactions : aucune clé étrangère vers l'application,
 // c'est la frontière entre les deux systèmes. L'application ne lui parle que par appliquer().
 

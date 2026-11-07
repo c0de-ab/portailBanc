@@ -2,12 +2,14 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { api, ErreurApi, type AvecAvertissements } from '../../api';
 import { useAssistant } from '../../assistant';
-import { Etat, GrandMontant, Jauge, ListeErreurs } from '../../composants';
+import { erreursDe, Etat, GrandMontant, Jauge, ListeErreurs } from '../../composants';
+import { creerFile } from '../../file';
+import { EcranConfirmation, quiDecide } from './EcranConfirmation';
 import {
   enDirhams,
+  enJours,
   libelleClient,
   PLAFOND_MAXIMUM,
-  SEUIL_DECISION_CONSEILLER,
   SEUIL_JUSTIFICATIF,
   type Demande,
   type ErreurDetaillee,
@@ -55,7 +57,7 @@ export function FormulaireDemande() {
   // La dernière demande connue, avec sa version : les enregistrements s'enchaînent dans l'ordre,
   // chacun partant de la version renvoyée par le précédent.
   const derniere = useRef<Demande | null>(null);
-  const file = useRef<Promise<void>>(Promise.resolve());
+  const [ajouterALaFile] = useState(creerFile);
 
   const appliquer = useCallback((r: AvecAvertissements) => {
     derniere.current = r.demande;
@@ -78,20 +80,22 @@ export function FormulaireDemande() {
   );
 
   useEffect(() => {
+    // Si l'adresse change avant la réponse (autre dossier), l'ancienne réponse est ignorée.
+    let actif = true;
     lireDemande(compteId, id)
-      .then(afficher)
-      .catch((e: unknown) =>
-        setErreurs(
-          e instanceof ErreurApi
-            ? e.erreurs
-            : [{ code: 'INCONNUE', message: 'Impossible de charger la demande.' }],
-        ),
+      .then((d) => actif && afficher(d))
+      .catch(
+        (e: unknown) => actif && setErreurs(erreursDe(e, 'Impossible de charger la demande.')),
       );
+    return () => {
+      actif = false;
+    };
   }, [compteId, id, afficher]);
 
   // Toute écriture passe par ici : l'erreur est affichée, un conflit recharge la demande.
+  // La tâche ne lève jamais : un échec, même du rechargement, est affiché, et la file continue.
   function executer(action: (d: Demande) => Promise<AvecAvertissements | void>) {
-    const tache = file.current.then(async () => {
+    return ajouterALaFile(async () => {
       setEnregistrement(true);
       setErreurs([]);
       try {
@@ -103,20 +107,14 @@ export function FormulaireDemande() {
         if (e instanceof ErreurApi && e.estUnConflit) {
           setConfirmation(false);
           setInfo(MESSAGE_CONFLIT);
-          await charger();
+          await charger().catch((rechargement: unknown) => setErreurs(erreursDe(rechargement)));
         } else {
-          setErreurs(
-            e instanceof ErreurApi
-              ? e.erreurs
-              : [{ code: 'INCONNUE', message: 'Le serveur est injoignable.' }],
-          );
+          setErreurs(erreursDe(e));
         }
       } finally {
         setEnregistrement(false);
       }
     });
-    file.current = tache;
-    return tache;
   }
 
   // Un nombre entier, ou null si le champ est vide ; undefined si la saisie n'est pas un entier.
@@ -191,25 +189,19 @@ export function FormulaireDemande() {
   }
 
   const plafond = entier(champs.plafond) ?? null;
-  const justificatifRequis = (plafond ?? 0) > SEUIL_JUSTIFICATIF;
-  const justificatifUtile = justificatifRequis || demande.justificatifPresent;
+  // Les règles viennent du serveur : les avertissements de verifierRegles (H23), renvoyés après
+  // chaque enregistrement. L'écran n'en recalcule aucune ; il les montre.
+  const regleNonRespectee = (code: string) => avertissements.some((a) => a.code === code);
+  // R4 : au-delà du seuil, et aucun fichier encore déposé.
+  const justificatifManquant = regleNonRespectee('R4');
+  const justificatifUtile = justificatifManquant || demande.justificatifPresent;
   const complement = demande.statut === 'COMPLEMENT_DEMANDE';
   const pret =
     avertissements.length === 0 && demande.plafondDemande !== null && demande.dureeJours !== null;
   const libelle = libelleClient(demande);
-  // R1, pour la couleur de la jauge seulement : le serveur reste seul juge.
-  const horsBornes =
-    plafond !== null &&
-    plafondInitial !== null &&
-    (plafond <= plafondInitial || plafond > PLAFOND_MAXIMUM);
-  const duree = (jours: number) => `${jours} jour${jours > 1 ? 's' : ''}`;
-  // Qui décidera, d'après le montant (R8) : une explication, le serveur applique la règle.
-  const decideur = (montant: number | null) =>
-    montant === null
-      ? 'Selon le montant'
-      : montant <= SEUIL_DECISION_CONSEILLER
-        ? 'Votre conseiller, jusqu’à 30 000 DH'
-        : 'Un superviseur, au-delà de 30 000 DH';
+  // R1 : le plafond enregistré sort des bornes ; la jauge le signale en couleur, seulement si
+  // le montant affiché est bien celui que le serveur a vérifié (pas une saisie en cours).
+  const horsBornes = regleNonRespectee('R1') && plafond === demande.plafondDemande;
   const filAriane = (
     <nav className="fil" aria-label="Fil d’Ariane">
       <Link to="/client">Mes plafonds de virement</Link>
@@ -219,124 +211,16 @@ export function FormulaireDemande() {
   );
 
   if (confirmation) {
-    const montantConfirme = demande.plafondDemande!;
     return (
-      <>
-        <div className="entete">
-          <div className="colonne ecart-8">
-            {filAriane}
-            <h1 className="h1">Vérifiez votre demande</h1>
-            <p className="muted">
-              Votre demande sera transmise telle qu’elle apparaît ici. Vous pourrez encore l’annuler
-              tant qu’aucune décision n’est prise.
-            </p>
-          </div>
-        </div>
-
-        <div className="g12">
-          <div className="colonne span-7">
-            <section className="coffre interieur-40" aria-labelledby="c-titre">
-              <div className="colonne ecart-12">
-                <p id="c-titre" className="coffre-label">
-                  Plafond demandé
-                </p>
-                <GrandMontant montant={montantConfirme} />
-                <p className="marge-haut-8">
-                  <Etat ton={libelle.ton}>{libelle.texte}</Etat>
-                </p>
-              </div>
-              {plafondInitial !== null && (
-                <div className="marge-haut-24">
-                  <Jauge
-                    plafondInitial={plafondInitial}
-                    applique={plafondInitial}
-                    demande={montantConfirme}
-                  />
-                </div>
-              )}
-            </section>
-
-            <section className="panel panel-lignes" aria-label="Détail de la demande">
-              <dl className="lignes">
-                <div className="ligne">
-                  <dt className="ligne-cle">Plafond demandé</dt>
-                  <dd className="ligne-val">{enDirhams(montantConfirme)}</dd>
-                </div>
-                <div className="ligne">
-                  <dt className="ligne-cle">Durée</dt>
-                  <dd className="ligne-val">{duree(demande.dureeJours!)}</dd>
-                </div>
-                <div className="ligne">
-                  <dt className="ligne-cle">Motif</dt>
-                  <dd className="ligne-val texte-libre">{demande.motif}</dd>
-                </div>
-                <div className="ligne">
-                  <dt className="ligne-cle">Justificatif</dt>
-                  <dd className="ligne-val">
-                    {demande.justificatifNom ??
-                      (montantConfirme > SEUIL_JUSTIFICATIF
-                        ? 'Aucun'
-                        : 'Aucun, facultatif jusqu’à 50 000 DH')}
-                  </dd>
-                </div>
-              </dl>
-            </section>
-          </div>
-
-          <aside className="panel colonne span-5 interieur-32" aria-labelledby="ensuite-titre">
-            <div className="colonne ecart-4">
-              <p className="surtitre">Après votre clic</p>
-              <h2 id="ensuite-titre" className="h2">
-                Ce qui se passera
-              </h2>
-            </div>
-            <ol className="frise-v" aria-label="Étapes à venir">
-              <li className="etape">
-                <span className="etape-point">1</span>
-                <span className="etape-nom">Examen</span>
-                <span className="etape-info">Par votre conseiller</span>
-              </li>
-              <li className="etape">
-                <span className="etape-point">2</span>
-                <span className="etape-nom">Décision</span>
-                <span className="etape-info">{decideur(montantConfirme)}</span>
-              </li>
-              <li className="etape">
-                <span className="etape-point">3</span>
-                <span className="etape-nom">Activation</span>
-                <span className="etape-info">
-                  La banque applique le plafond après une décision favorable
-                </span>
-              </li>
-              <li className="etape">
-                <span className="etape-point">4</span>
-                <span className="etape-nom">Échéance</span>
-                <span className="etape-info">{duree(demande.dureeJours!)} après l’activation</span>
-              </li>
-            </ol>
-            <ListeErreurs erreurs={erreurs} />
-            <div className="separateur" />
-            <div className="colonne ecart-12">
-              <button
-                type="button"
-                className="btn btn-primaire btn-plein"
-                disabled={enregistrement}
-                onClick={() => void soumettre()}
-              >
-                {enregistrement ? 'Envoi…' : 'Confirmer et soumettre'}
-              </button>
-              <button
-                type="button"
-                className="btn btn-secondaire btn-plein"
-                onClick={() => setConfirmation(false)}
-              >
-                Modifier la demande
-              </button>
-            </div>
-            <p className="muted centre poids-500">Rien n’est soumis sans ce clic.</p>
-          </aside>
-        </div>
-      </>
+      <EcranConfirmation
+        demande={demande}
+        plafondInitial={plafondInitial}
+        filAriane={filAriane}
+        erreurs={erreurs}
+        envoi={enregistrement}
+        confirmer={() => void soumettre()}
+        modifier={() => setConfirmation(false)}
+      />
     );
   }
 
@@ -411,7 +295,7 @@ export function FormulaireDemande() {
                     checked={champs.duree === String(j)}
                     onChange={(e) => enregistrerDuree(e.target.value)}
                   />
-                  <span>{duree(j)}</span>
+                  <span>{enJours(j)}</span>
                 </label>
               ))}
             </div>
@@ -441,19 +325,13 @@ export function FormulaireDemande() {
                 <label className="etiquette" htmlFor="f-justif">
                   Justificatif
                 </label>
-                {justificatifRequis ? (
+                {justificatifManquant ? (
                   <span className="t13 texte-obligatoire">Obligatoire</span>
                 ) : (
-                  <span className="t13 muted">Facultatif</span>
+                  <span className="t13 muted">Enregistré</span>
                 )}
               </div>
-              <div
-                className={
-                  justificatifRequis && !demande.justificatifPresent
-                    ? 'depot'
-                    : 'depot depot-neutre'
-                }
-              >
+              <div className={justificatifManquant ? 'depot' : 'depot depot-neutre'}>
                 <div className="colonne ecart-4 min-0">
                   <span className="poids-500">
                     {demande.justificatifNom
@@ -534,20 +412,20 @@ export function FormulaireDemande() {
               <div className="ligne">
                 <span className="ligne-cle">Durée</span>
                 <span className="ligne-val">
-                  {champs.duree === '' ? 'Non renseignée' : duree(Number(champs.duree))}
+                  {champs.duree === '' ? 'Non renseignée' : enJours(Number(champs.duree))}
                 </span>
               </div>
               <div className="ligne">
                 <span className="ligne-cle">Décision</span>
-                <span className="ligne-val">{decideur(plafond)}</span>
+                <span className="ligne-val">{quiDecide(plafond)}</span>
               </div>
               <div className="ligne">
                 <span className="ligne-cle">Justificatif</span>
                 <span className="ligne-val">
                   {demande.justificatifNom ??
-                    (justificatifRequis
+                    (justificatifManquant
                       ? 'Obligatoire, à déposer'
-                      : 'Facultatif jusqu’à 50 000 DH')}
+                      : `Facultatif jusqu’à ${enDirhams(SEUIL_JUSTIFICATIF)}`)}
                 </span>
               </div>
             </div>

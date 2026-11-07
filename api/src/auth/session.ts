@@ -15,7 +15,7 @@ export const enregistrerSession = (req: Request): Promise<void> =>
 export const detruireSession = (req: Request): Promise<void> =>
   promisify(req.session.destroy.bind(req.session))();
 
-// Le middleware de session (CLAUDE.md, section Sécurité).
+// Le middleware de session.
 // - Sessions stockées dans la table `session`, créée par la migration 001 :
 //   createTableIfMissing reste désactivé, l'application ne crée jamais de table.
 // - Cookie httpOnly (illisible en JavaScript) et SameSite=Strict (jamais envoyé depuis un

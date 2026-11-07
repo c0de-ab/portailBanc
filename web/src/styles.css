@@ -2531,46 +2531,65 @@ a.panel:focus-visible {
   padding: 16px 16px 16px 24px;
   border-bottom: 1px solid #e9e6df;
 }
-.panneau-effacer {
-  height: 36px;
-  padding: 0 14px;
-  font-size: 14px;
+/* Le titre et, juste à côté, le bouton « i » qui déplie l'aide. */
+.panneau-titre {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
-/* Le bouton icône qui masque le panneau. */
-.panneau-masquer {
+/* Les boutons discrets de l'en-tête : sans bordure, ils se révèlent au survol. */
+.panneau-icone,
+.panneau-effacer {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  height: 36px;
   border: 0;
   border-radius: 10px;
   background: none;
   color: #5a6472;
+  font: inherit;
   cursor: pointer;
 }
-.panneau-masquer:hover {
+.panneau-icone {
+  width: 36px;
+}
+.panneau-effacer {
+  gap: 6px;
+  padding: 0 10px;
+  font-size: 14px;
+  font-weight: 500;
+}
+.panneau-icone:hover,
+.panneau-effacer:hover,
+.panneau-info[aria-expanded='true'] {
   background: #efece6;
   color: #16202a;
 }
-.panneau-masquer:focus-visible,
+.panneau-effacer:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.panneau-icone:focus-visible,
+.panneau-effacer:focus-visible,
 .lanceur-assistant:focus-visible {
   outline: 2px solid #3b5fd9;
   outline-offset: 2px;
 }
+/* L'aide dépliée sous l'en-tête. */
 .reperes {
-  padding: 12px 24px;
+  padding: 16px 24px 8px;
   border-bottom: 1px solid #e9e6df;
+  background: #f6f4f0;
 }
-.reperes summary {
-  cursor: pointer;
+.reperes-titre {
   font-size: 14px;
   line-height: 24px;
   font-weight: 500;
   color: #16202a;
 }
 .reperes ul {
-  margin-top: 16px;
+  margin-top: 8px;
 }
 .panneau-assistant .specimen {
   grid-template-columns: 64px minmax(0, 1fr);
@@ -2584,8 +2603,9 @@ a.panel:focus-visible {
   padding: 24px;
 }
 /* Les messages partent du bas, près de la saisie, comme dans une messagerie. La marge auto du
-   premier élément (et non justify-content) garde le défilement possible vers le haut. */
-.panneau-messages > :first-child {
+   premier message (et non justify-content) garde le défilement possible vers le haut. Le texte
+   d'accueil, lui, reste en haut, sous l'en-tête. */
+.panneau-messages > .fil-messages:first-child {
   margin-top: auto;
 }
 /* La pastille devant le nom de l'auteur : votre initiale, ou un rond en pointillés pour
@@ -2728,4 +2748,17 @@ button.rail-lien {
   button.rail-lien {
     width: auto;
   }
+}
+
+/* Le filet de sécurité d'affichage et l'attente de la session. */
+.erreur-affichage {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 560px;
+  margin: 96px auto;
+  padding: 0 16px;
+}
+.chargement-session {
+  padding: 40px;
 }

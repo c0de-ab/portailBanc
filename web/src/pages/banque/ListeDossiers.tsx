@@ -6,6 +6,7 @@ import { useSession } from '../../session';
 import {
   dateBreve,
   enDirhams,
+  enJours,
   libelleDossier,
   libelleRole,
   type Dossier,
@@ -184,11 +185,7 @@ function Groupe({
                   <td className="num">
                     {d.plafondDemande === null ? '' : enDirhams(d.plafondDemande)}
                   </td>
-                  <td>
-                    {d.dureeJours === null
-                      ? ''
-                      : `${d.dureeJours} jour${d.dureeJours > 1 ? 's' : ''}`}
-                  </td>
+                  <td>{d.dureeJours === null ? '' : enJours(d.dureeJours)}</td>
                   <td>
                     <Etat ton={libelle.ton}>{libelle.texte}</Etat>
                   </td>

@@ -104,8 +104,8 @@ export function Jauge({
   const enDh = (montant: number) => `${montant.toLocaleString('fr-FR')} DH`;
   const description =
     demande === null
-      ? `Plafond appliqué : ${enDh(applique)}, sur une échelle de 0 à 100 000 DH.`
-      : `Plafond demandé : ${enDh(demande)} ; plafond appliqué : ${enDh(applique)} ; échelle de 0 à 100 000 DH.`;
+      ? `Plafond appliqué : ${enDh(applique)}, sur une échelle de 0 à ${enDh(PLAFOND_MAXIMUM)}.`
+      : `Plafond demandé : ${enDh(demande)} ; plafond appliqué : ${enDh(applique)} ; échelle de 0 à ${enDh(PLAFOND_MAXIMUM)}.`;
   return (
     <div className="colonne ecart-16">
       <div className="jauge" role="img" aria-label={description}>
@@ -139,19 +139,19 @@ export function Jauge({
             <span className="grad-leg">{legendeLongue ? 'Plafond habituel' : 'Habituel'}</span>
           </span>
           <span className="grad" style={{ left: position(SEUIL_DECISION_CONSEILLER) }}>
-            <span className="grad-val">30 000</span>
+            <span className="grad-val">{SEUIL_DECISION_CONSEILLER.toLocaleString('fr-FR')}</span>
             <span className="grad-leg">
               {legendeLongue ? 'Seuil du superviseur' : 'Superviseur'}
             </span>
           </span>
           <span className="grad" style={{ left: position(SEUIL_JUSTIFICATIF) }}>
-            <span className="grad-val">50 000</span>
+            <span className="grad-val">{SEUIL_JUSTIFICATIF.toLocaleString('fr-FR')}</span>
             <span className="grad-leg">
               {legendeLongue ? 'Seuil du justificatif' : 'Justificatif'}
             </span>
           </span>
           <span className="grad grad-fin" style={{ left: '100%' }}>
-            <span className="grad-val">100 000 DH</span>
+            <span className="grad-val">{enDh(PLAFOND_MAXIMUM)}</span>
             <span className="grad-leg">Maximum</span>
           </span>
         </div>

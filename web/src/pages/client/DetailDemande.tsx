@@ -4,13 +4,14 @@ import { api, ErreurApi } from '../../api';
 import {
   dateBreve,
   enDirhams,
+  enJours,
   libelleClient,
   LIBELLE_DECISION,
   type Compte,
   type DetailDemande as Detail,
   type ErreurDetaillee,
 } from '../../types';
-import { Etat, Frise, GrandMontant, Jauge, ListeErreurs } from '../../composants';
+import { erreursDe, Etat, Frise, GrandMontant, Jauge, ListeErreurs } from '../../composants';
 
 const ANNULABLE = ['SOUMISE', 'COMPLEMENT_DEMANDE', 'ATTENTE_SUPERVISEUR'];
 
@@ -33,15 +34,16 @@ export function DetailDemande() {
   const charger = async () => afficher(await lire());
 
   useEffect(() => {
+    // Si l'adresse change avant la réponse (autre dossier), l'ancienne réponse est ignorée.
+    let actif = true;
     lire()
-      .then(afficher)
-      .catch((e: unknown) =>
-        setErreurs(
-          e instanceof ErreurApi
-            ? e.erreurs
-            : [{ code: 'INCONNUE', message: 'Impossible de charger la demande.' }],
-        ),
+      .then((d) => actif && afficher(d))
+      .catch(
+        (e: unknown) => actif && setErreurs(erreursDe(e, 'Impossible de charger la demande.')),
       );
+    return () => {
+      actif = false;
+    };
   }, [lire, afficher]);
 
   async function annuler() {
@@ -57,11 +59,7 @@ export function DetailDemande() {
       if (e instanceof ErreurApi && e.estUnConflit) {
         setInfo('La demande a changé entre-temps : elle a été rechargée. Vérifiez son état.');
       } else {
-        setErreurs(
-          e instanceof ErreurApi
-            ? e.erreurs
-            : [{ code: 'INCONNUE', message: 'Le serveur est injoignable.' }],
-        );
+        setErreurs(erreursDe(e));
       }
     } finally {
       await charger().catch(() => undefined);
@@ -80,7 +78,6 @@ export function DetailDemande() {
   const { demande, revisions, decisions } = detail;
   const libelle = libelleClient(demande);
   const dernierComplement = [...decisions].reverse().find((d) => d.type === 'DEMANDE_COMPLEMENT');
-  const duree = (jours: number) => `${jours} jour${jours > 1 ? 's' : ''}`;
 
   return (
     <>
@@ -100,7 +97,7 @@ export function DetailDemande() {
           {demande.plafondDemande !== null && (
             <p className="muted">
               {enDirhams(demande.plafondDemande)}
-              {demande.dureeJours !== null && ` pendant ${duree(demande.dureeJours)}`}
+              {demande.dureeJours !== null && ` pendant ${enJours(demande.dureeJours)}`}
             </p>
           )}
         </div>
@@ -218,7 +215,9 @@ export function DetailDemande() {
           <dl className="faits faits-4">
             <div>
               <dt>Durée</dt>
-              <dd>{demande.dureeJours === null ? 'Non renseignée' : duree(demande.dureeJours)}</dd>
+              <dd>
+                {demande.dureeJours === null ? 'Non renseignée' : enJours(demande.dureeJours)}
+              </dd>
             </div>
             {demande.submittedAt && (
               <div>
@@ -305,7 +304,7 @@ export function DetailDemande() {
                     </div>
                     <div className="ligne ligne-compacte">
                       <dt className="ligne-cle">Durée</dt>
-                      <dd className="ligne-val">{duree(r.dureeJours)}</dd>
+                      <dd className="ligne-val">{enJours(r.dureeJours)}</dd>
                     </div>
                     <div className="ligne ligne-compacte">
                       <dt className="ligne-cle">Motif</dt>

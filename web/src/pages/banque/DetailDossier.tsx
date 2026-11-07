@@ -2,10 +2,10 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { api, ErreurApi } from '../../api';
 import { Etat, GrandMontant, Jauge, ListeErreurs, erreursDe } from '../../composants';
-import { useSession } from '../../session';
 import {
   dateBreve,
   enDirhams,
+  enJours,
   LIBELLE_DECISION,
   LIBELLE_EVENEMENT,
   LIBELLE_EXECUTION,
@@ -17,25 +17,14 @@ import {
   type ErreurDetaillee,
 } from '../../types';
 import { activationAReprendre } from './ListeDossiers';
-import { ModeBanqueDemo } from './ModeBanqueDemo';
+import { type Action, LIBELLE_ACTION, PanneauDecision, PanneauRelance } from './PanneauxDossier';
 
 // Un dossier vu par le conseiller ou le superviseur, avec les actions que son état permet.
 // L'écran ne propose que les actions attendues ; le serveur reste seul juge (R8, R9, R11…) et
 // tout refus est affiché tel quel.
 
-type Action = 'demander-complement' | 'approuver' | 'rejeter' | 'favorable' | 'defavorable';
-
-const LIBELLE_ACTION: Record<Action, string> = {
-  'demander-complement': 'Demander un complément',
-  approuver: 'Approuver',
-  rejeter: 'Rejeter',
-  favorable: 'Recommander : avis favorable',
-  defavorable: 'Recommander : avis défavorable',
-};
-
 export function DetailDossier() {
   const { id } = useParams();
-  const { utilisateur } = useSession();
   const [detail, setDetail] = useState<Detail | null>(null);
   const [motif, setMotif] = useState('');
   const [erreurs, setErreurs] = useState<ErreurDetaillee[]>([]);
@@ -45,9 +34,16 @@ export function DetailDossier() {
   const lire = useCallback(() => api.dossier(id!), [id]);
 
   useEffect(() => {
+    // Si l'adresse change avant la réponse (autre dossier), l'ancienne réponse est ignorée.
+    let actif = true;
     lire()
-      .then(setDetail)
-      .catch((e: unknown) => setErreurs(erreursDe(e, 'Impossible de charger le dossier.')));
+      .then((d) => actif && setDetail(d))
+      .catch(
+        (e: unknown) => actif && setErreurs(erreursDe(e, 'Impossible de charger le dossier.')),
+      );
+    return () => {
+      actif = false;
+    };
   }, [lire]);
 
   // Toute action : l'erreur est affichée, un conflit recharge le dossier, puis on relit tout.
@@ -68,7 +64,11 @@ export function DetailDossier() {
         setErreurs(erreursDe(e));
       }
     } finally {
-      setDetail(await lire().catch(() => detail));
+      // Relu après l'action ; si la relecture échoue, le dossier affiché reste le dernier connu.
+      const relu = await lire().catch(() => null);
+      if (relu) {
+        setDetail(relu);
+      }
       setEnvoi(null);
     }
   }
@@ -92,28 +92,21 @@ export function DetailDossier() {
   }
 
   const { demande, client, compte, revisions, decisions, historique } = detail;
-  const roles = utilisateur?.roles ?? [];
   const libelle = libelleDossier(demande);
   const montant = demande.plafondDemande ?? 0;
 
-  // Les actions attendues selon l'état, le rôle et le montant (R8, H5).
-  const actions: Action[] = [];
-  if (demande.statut === 'SOUMISE' && roles.includes('CONSEILLER')) {
-    actions.push('demander-complement');
-    actions.push(
-      ...(montant <= SEUIL_DECISION_CONSEILLER
-        ? (['approuver', 'rejeter'] as const)
-        : (['favorable', 'defavorable'] as const)),
-    );
-  }
-  if (demande.statut === 'ATTENTE_SUPERVISEUR' && roles.includes('SUPERVISEUR')) {
-    actions.push('approuver', 'rejeter');
-  }
+  // Les actions viennent de l'API, calculées par les mêmes règles que la décision (R8, R9, H5,
+  // H18) : l'écran ne les recalcule pas. Une recommandation se fait avec un avis.
+  const actions: Action[] = detail.actions.flatMap((a): Action[] =>
+    a === 'demanderComplement'
+      ? ['demander-complement']
+      : a === 'recommander'
+        ? ['favorable', 'defavorable']
+        : [a],
+  );
 
-  // Le plafond appliqué, déduit du statut : la banque applique le montant demandé seulement
-  // quand la demande est active (une décision favorable ne suffit pas).
-  const applique = demande.statut === 'ACTIVE' ? montant : compte.plafondInitial;
-  const duree = (jours: number) => `${jours} jour${jours > 1 ? 's' : ''}`;
+  // Le plafond réellement appliqué par la banque (bank_limits), lu par l'API.
+  const applique = compte.plafondCourant;
   const relance = activationAReprendre(demande);
 
   return (
@@ -152,7 +145,7 @@ export function DetailDossier() {
                 <div className="ligne ligne-serree">
                   <dt className="ligne-cle">Durée</dt>
                   <dd className="ligne-val">
-                    {demande.dureeJours === null ? '' : duree(demande.dureeJours)}
+                    {demande.dureeJours === null ? '' : enJours(demande.dureeJours)}
                   </dd>
                 </div>
                 <div className="ligne ligne-serree">
@@ -169,8 +162,8 @@ export function DetailDossier() {
               <p>
                 <span className="poids-500">
                   {montant <= SEUIL_DECISION_CONSEILLER
-                    ? 'Jusqu’à 30 000 DH'
-                    : 'Au-delà de 30 000 DH'}
+                    ? `Jusqu’à ${enDirhams(SEUIL_DECISION_CONSEILLER)}`
+                    : `Au-delà de ${enDirhams(SEUIL_DECISION_CONSEILLER)}`}
                 </span>
                 <span className="muted">
                   {montant <= SEUIL_DECISION_CONSEILLER
@@ -180,7 +173,9 @@ export function DetailDossier() {
               </p>
               <p>
                 <span className="poids-500">
-                  {montant <= SEUIL_JUSTIFICATIF ? 'Jusqu’à 50 000 DH' : 'Au-delà de 50 000 DH'}
+                  {montant <= SEUIL_JUSTIFICATIF
+                    ? `Jusqu’à ${enDirhams(SEUIL_JUSTIFICATIF)}`
+                    : `Au-delà de ${enDirhams(SEUIL_JUSTIFICATIF)}`}
                 </span>
                 <span className="muted">
                   {montant <= SEUIL_JUSTIFICATIF
@@ -316,7 +311,7 @@ export function DetailDossier() {
                     <span className="t13 muted">{dateBreve(r.soumiseLe)}</span>
                   </div>
                   <p className="muted">
-                    {enDirhams(r.plafondDemande)}, {duree(r.dureeJours)},{' '}
+                    {enDirhams(r.plafondDemande)}, {enJours(r.dureeJours)},{' '}
                     {r.justificatifNom ? `justificatif ${r.justificatifNom}` : 'sans justificatif'}
                   </p>
                   <p className="t15 texte-libre">{r.motif}</p>
@@ -349,126 +344,32 @@ export function DetailDossier() {
 
         <div className="colonne span-4">
           {actions.length > 0 && (
-            <aside className="panel colonne interieur-32 ecart-24" aria-labelledby="decision-titre">
-              <div className="colonne ecart-8">
-                <p className="surtitre">Votre action</p>
-                <h2 id="decision-titre" className="h2">
-                  Décision
-                </h2>
-                <p className="muted">
-                  {demande.statut === 'ATTENTE_SUPERVISEUR'
-                    ? 'Au-delà de 30 000 DH, le superviseur décide.'
-                    : montant <= SEUIL_DECISION_CONSEILLER
-                      ? 'Jusqu’à 30 000 DH, vous décidez.'
-                      : 'Au-delà de 30 000 DH, vous transmettez le dossier avec votre recommandation.'}
-                </p>
-              </div>
-              <div className="champ">
-                <label className="etiquette" htmlFor="d-motif">
-                  Motif, communiqué avec la décision
-                </label>
-                <textarea
-                  id="d-motif"
-                  className="saisie saisie-motif"
-                  rows={4}
-                  maxLength={2000}
-                  value={motif}
-                  onChange={(e) => setMotif(e.target.value)}
-                />
-                <p className="aide">Le motif est obligatoire pour toute décision.</p>
-              </div>
-              <ListeErreurs erreurs={erreurs} />
-              <div className="colonne ecart-12">
-                {actions.map((action) => (
-                  <button
-                    key={action}
-                    type="button"
-                    className={`btn btn-plein ${
-                      action === 'rejeter' || action === 'defavorable'
-                        ? 'btn-refus'
-                        : action === 'demander-complement'
-                          ? 'btn-secondaire'
-                          : 'btn-primaire'
-                    }`}
-                    disabled={envoi !== null || motif.trim() === ''}
-                    onClick={() => decider(demande, action)}
-                  >
-                    {LIBELLE_ACTION[action]}
-                  </button>
-                ))}
-              </div>
-              {envoi && (
-                <p className="t13 muted" role="status">
-                  {envoi}
-                </p>
-              )}
-              <div className="separateur" />
-              <p className="t13 muted">
-                Une décision favorable n’active pas le plafond : il n’est actif qu’une fois appliqué
-                par la banque.
-              </p>
-            </aside>
+            <PanneauDecision
+              demande={demande}
+              actions={actions}
+              motif={motif}
+              changerMotif={setMotif}
+              erreurs={erreurs}
+              envoi={envoi}
+              decider={(action) => decider(demande, action)}
+            />
           )}
 
           {relance && (
-            <aside
-              className="panel colonne interieur-32 ecart-24"
-              aria-labelledby="activation-titre"
-            >
-              <div className="colonne ecart-12">
-                <h2 id="activation-titre" className="h2">
-                  Activation
-                </h2>
-                <Etat ton="action">{libelle.texte}</Etat>
-              </div>
-              <dl className="lignes">
-                <div className="ligne ligne-serree">
-                  <dt className="ligne-cle">Décision favorable</dt>
-                  <dd className="ligne-val">
-                    {enDirhams(montant)}
-                    {demande.dureeJours !== null && `, ${duree(demande.dureeJours)}`}
-                  </dd>
-                </div>
-                <div className="ligne ligne-serree">
-                  <dt className="ligne-cle">Plafond appliqué par la banque</dt>
-                  <dd className="ligne-val">{enDirhams(compte.plafondInitial)}, inchangé</dd>
-                </div>
-              </dl>
-              {demande.derniereErreur && (
-                <div className="colonne ecart-8">
-                  <p className="etiquette">Dernière erreur de la banque</p>
-                  <div className="boite-erreur" role="status">
-                    <p className="poids-500">{demande.derniereErreur}</p>
-                  </div>
-                </div>
-              )}
-              <ModeBanqueDemo />
-              {actions.length === 0 && <ListeErreurs erreurs={erreurs} />}
-              <button
-                type="button"
-                className="btn btn-primaire btn-plein"
-                disabled={envoi !== null}
-                onClick={() =>
-                  void executer(
-                    'Appel à la banque…',
-                    () => api.relancer(demande),
-                    'Relance effectuée.',
-                  )
-                }
-              >
-                Relancer l’activation
-              </button>
-              {envoi && (
-                <p className="t13 muted" role="status">
-                  {envoi}
-                </p>
-              )}
-              <div className="separateur" />
-              <p className="t13 muted">
-                La décision reste acquise : seule l’activation par la banque est relancée, et la
-                banque ne l’applique jamais deux fois.
-              </p>
-            </aside>
+            <PanneauRelance
+              demande={demande}
+              etat={libelle.texte}
+              plafondApplique={compte.plafondCourant}
+              erreurs={actions.length === 0 ? erreurs : []}
+              envoi={envoi}
+              relancer={() =>
+                void executer(
+                  'Appel à la banque…',
+                  () => api.relancer(demande),
+                  'Relance effectuée.',
+                )
+              }
+            />
           )}
 
           {actions.length === 0 && !relance && (

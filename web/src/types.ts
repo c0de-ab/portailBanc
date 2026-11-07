@@ -1,5 +1,5 @@
-// Statuts, libellés et formes des réponses, RECOPIÉS de l'API (pas de package partagé :
-// docs/stack-technique.md). Les libellés client viennent de docs/etats-transitions.md, § 6.
+// Statuts, libellés et formes des réponses, RECOPIÉS de l'API : pas de package partagé, pour
+// garder deux projets simples et indépendants.
 
 export type Role = 'CLIENT' | 'CONSEILLER' | 'SUPERVISEUR';
 
@@ -25,7 +25,7 @@ export type StatutDemande =
 
 export type StatutExecution = 'EN_ATTENTE' | 'REUSSIE' | 'ECHEC' | 'INCONNU';
 
-// Une erreur au format de l'API (CLAUDE.md, règle 8).
+// Une erreur au format de l'API.
 export type ErreurDetaillee = { code: string; champ?: string; message: string };
 
 export type Demande = {
@@ -79,6 +79,8 @@ export const SEUIL_DECISION_CONSEILLER = 30_000;
 export const SEUIL_JUSTIFICATIF = 50_000;
 
 export const enDirhams = (montant: number) => `${montant.toLocaleString('fr-FR')} DH`;
+// Une durée en jours, au singulier ou au pluriel : « 1 jour », « 3 jours ».
+export const enJours = (jours: number) => `${jours} jour${jours > 1 ? 's' : ''}`;
 
 export const dateCourte = (iso: string) =>
   new Date(iso).toLocaleDateString('fr-FR', { dateStyle: 'long' });
@@ -89,7 +91,7 @@ export const dateLisible = (iso: string) =>
 // Le ton d'un état, pour sa couleur : en cours, favorable, effectif, terminé, en défaut.
 export type Ton = 'neutre' | 'attente' | 'action' | 'actif' | 'termine' | 'refus';
 
-// Ce que voit le client (docs/etats-transitions.md, § 6). La décision favorable et le plafond
+// Ce que voit le client. La décision favorable et le plafond
 // effectivement actif sont distingués, comme l'exige le cahier.
 export function libelleClient(d: Demande): { texte: string; ton: Ton } {
   switch (d.statut) {
@@ -161,8 +163,11 @@ export type Dossier = Demande & {
 export type DetailDossier = {
   demande: Dossier;
   client: { nom: string; dossierComplet: boolean };
-  compte: { numero: string; plafondInitial: number };
+  // plafondCourant : ce que la banque applique réellement.
+  compte: { numero: string; plafondInitial: number; plafondCourant: number };
   revisions: DetailDemande['revisions'];
+  // Les décisions que l'utilisateur connecté peut prendre, calculées par l'API.
+  actions: ('demanderComplement' | 'approuver' | 'rejeter' | 'recommander')[];
   // Le personnel voit toutes les décisions, recommandations comprises (H19).
   decisions: {
     type: string;

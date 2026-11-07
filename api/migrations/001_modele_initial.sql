@@ -1,7 +1,6 @@
--- 001 : modèle initial (docs/modele-donnees.md).
--- Tables, colonnes et valeurs exactement comme dans le document.
+-- 001 : modèle initial.
 -- created_at et updated_at n'ont pas de valeur par défaut : les services écrivent `maintenant`
--- (CLAUDE.md, règle 9), et une date oubliée fait échouer l'insertion.
+-- et une date oubliée fait échouer l'insertion.
 -- Rien n'est jamais supprimé : toutes les clés étrangères sont en ON DELETE RESTRICT.
 
 -- ---------------------------------------------------------------------------

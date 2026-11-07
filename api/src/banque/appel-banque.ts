@@ -4,7 +4,7 @@ import { ErreurBanque } from './banque.service';
 // Ce que l'application fait de chaque appel à la banque simulée, à l'activation comme à
 // l'expiration : la même limite de temps, la même lecture des erreurs.
 
-// Délai maximal d'un appel à la banque (CLAUDE.md, règle 7).
+// Délai maximal d'un appel à la banque.
 const DELAI_BANQUE_MS = 3000;
 
 // L'appel, borné à 3 s : au-delà, le résultat est inconnu (comme une réponse perdue).

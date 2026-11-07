@@ -7,7 +7,11 @@ import {
   dateBreve,
   dateLisible,
   enDirhams,
+  enJours,
   libelleClient,
+  PLAFOND_MAXIMUM,
+  SEUIL_DECISION_CONSEILLER,
+  SEUIL_JUSTIFICATIF,
   type Compte,
   type Demande,
 } from '../../types';
@@ -114,8 +118,7 @@ export function TableauDeBord() {
   );
 }
 
-const dureeTexte = (jours: number | null) =>
-  jours === null ? '' : `${jours} jour${jours > 1 ? 's' : ''}`;
+const dureeTexte = (jours: number | null) => (jours === null ? '' : enJours(jours));
 
 // Le coffre : le plafond réellement appliqué par la banque. Une demande en cours, pas encore
 // appliquée, apparaît sur la jauge comme « Demandé » : la décision favorable n'est pas un
@@ -228,20 +231,21 @@ function SansDemande({ compte }: { compte: Compte }) {
           Aucune demande en cours
         </h2>
         <p className="muted largeur-520">
-          Vous pouvez augmenter temporairement votre plafond, de 1 à 7 jours et jusqu’à 100 000 DH.
+          Vous pouvez augmenter temporairement votre plafond, de 1 à 7 jours et jusqu’à{' '}
+          {enDirhams(PLAFOND_MAXIMUM)}.
         </p>
       </div>
       <div className="regles">
         <div className="regle">
-          <span className="regle-val">Jusqu’à 30 000 DH</span>
+          <span className="regle-val">Jusqu’à {enDirhams(SEUIL_DECISION_CONSEILLER)}</span>
           <span className="t13 muted">Votre conseiller décide.</span>
         </div>
         <div className="regle">
-          <span className="regle-val">Au-delà de 30 000 DH</span>
+          <span className="regle-val">Au-delà de {enDirhams(SEUIL_DECISION_CONSEILLER)}</span>
           <span className="t13 muted">Votre conseiller recommande, un superviseur décide.</span>
         </div>
         <div className="regle">
-          <span className="regle-val">Au-delà de 50 000 DH</span>
+          <span className="regle-val">Au-delà de {enDirhams(SEUIL_JUSTIFICATIF)}</span>
           <span className="t13 muted">
             Justificatif obligatoire : PDF, JPEG ou PNG, 2 Mo maximum.
           </span>

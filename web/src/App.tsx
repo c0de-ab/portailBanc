@@ -1,5 +1,6 @@
 import { useEffect, type ReactNode } from 'react';
-import { BrowserRouter, Link, Navigate, Route, Routes } from 'react-router';
+import { BrowserRouter, Link, Navigate, NavLink, Route, Routes } from 'react-router';
+import { ErreurAffichage } from './erreur-affichage';
 import { Connexion } from './pages/Connexion';
 import { DetailDossier } from './pages/banque/DetailDossier';
 import { ListeDossiers } from './pages/banque/ListeDossiers';
@@ -13,74 +14,76 @@ import { libelleRole, type Role } from './types';
 
 export function App() {
   return (
-    <FournisseurSession>
-      <FournisseurAssistant>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/connexion" element={<Connexion />} />
-            <Route path="/" element={<Accueil />} />
-            <Route
-              path="/client"
-              element={
-                <Protege role="CLIENT">
-                  <TableauDeBord />
-                </Protege>
-              }
-            />
-            {/* L'ancienne adresse de l'assistant ouvre le panneau sur « Mes plafonds ». */}
-            <Route
-              path="/client/assistant"
-              element={
-                <Protege role="CLIENT">
-                  <OuvrirAssistant />
-                </Protege>
-              }
-            />
-            <Route
-              path="/client/comptes/:compteId/brouillon"
-              element={
-                <Protege role="CLIENT">
-                  <FormulaireDemande />
-                </Protege>
-              }
-            />
-            <Route
-              path="/client/demandes/:id/completer"
-              element={
-                <Protege role="CLIENT">
-                  <FormulaireDemande />
-                </Protege>
-              }
-            />
-            <Route
-              path="/client/demandes/:id"
-              element={
-                <Protege role="CLIENT">
-                  <DetailDemande />
-                </Protege>
-              }
-            />
-            <Route
-              path="/banque"
-              element={
-                <Protege role="CONSEILLER">
-                  <ListeDossiers />
-                </Protege>
-              }
-            />
-            <Route
-              path="/banque/dossiers/:id"
-              element={
-                <Protege role="CONSEILLER">
-                  <DetailDossier />
-                </Protege>
-              }
-            />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </BrowserRouter>
-      </FournisseurAssistant>
-    </FournisseurSession>
+    <ErreurAffichage>
+      <FournisseurSession>
+        <FournisseurAssistant>
+          <BrowserRouter>
+            <Routes>
+              <Route path="/connexion" element={<Connexion />} />
+              <Route path="/" element={<Accueil />} />
+              <Route
+                path="/client"
+                element={
+                  <Protege role="CLIENT">
+                    <TableauDeBord />
+                  </Protege>
+                }
+              />
+              {/* L'ancienne adresse de l'assistant ouvre le panneau sur « Mes plafonds ». */}
+              <Route
+                path="/client/assistant"
+                element={
+                  <Protege role="CLIENT">
+                    <OuvrirAssistant />
+                  </Protege>
+                }
+              />
+              <Route
+                path="/client/comptes/:compteId/brouillon"
+                element={
+                  <Protege role="CLIENT">
+                    <FormulaireDemande />
+                  </Protege>
+                }
+              />
+              <Route
+                path="/client/demandes/:id/completer"
+                element={
+                  <Protege role="CLIENT">
+                    <FormulaireDemande />
+                  </Protege>
+                }
+              />
+              <Route
+                path="/client/demandes/:id"
+                element={
+                  <Protege role="CLIENT">
+                    <DetailDemande />
+                  </Protege>
+                }
+              />
+              <Route
+                path="/banque"
+                element={
+                  <Protege role="CONSEILLER">
+                    <ListeDossiers />
+                  </Protege>
+                }
+              />
+              <Route
+                path="/banque/dossiers/:id"
+                element={
+                  <Protege role="CONSEILLER">
+                    <DetailDossier />
+                  </Protege>
+                }
+              />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </BrowserRouter>
+        </FournisseurAssistant>
+      </FournisseurSession>
+    </ErreurAffichage>
   );
 }
 
@@ -88,7 +91,7 @@ export function App() {
 function Accueil() {
   const { utilisateur, chargement } = useSession();
   if (chargement) {
-    return null;
+    return <ChargementSession />;
   }
   if (!utilisateur) {
     return <Navigate to="/connexion" replace />;
@@ -102,10 +105,19 @@ function OuvrirAssistant() {
   return <Navigate to="/client" replace />;
 }
 
+// Le temps de demander au serveur qui est connecté : un texte, plutôt qu'un écran vide.
+function ChargementSession() {
+  return (
+    <p className="chargement chargement-session" role="status">
+      Chargement…
+    </p>
+  );
+}
+
 function Protege({ role, children }: { role: Role; children: ReactNode }) {
   const { utilisateur, chargement } = useSession();
   if (chargement) {
-    return null;
+    return <ChargementSession />;
   }
   if (!utilisateur) {
     return <Navigate to="/connexion" replace />;
@@ -199,10 +211,10 @@ function Cadre({ children }: { children: ReactNode }) {
           {client ? (
             <>
               {/* « Mes plafonds » couvre tout l'espace client : tableau de bord, formulaire, détail. */}
-              <Link to="/client" className="rail-lien" aria-current="page">
+              <NavLink to="/client" className="rail-lien">
                 {ICONE_PLAFONDS}
                 Mes plafonds
-              </Link>
+              </NavLink>
               {/* L'assistant s'ouvre à côté de la page en cours, sans la quitter. */}
               <button
                 type="button"
@@ -216,10 +228,10 @@ function Cadre({ children }: { children: ReactNode }) {
               </button>
             </>
           ) : (
-            <Link to="/banque" className="rail-lien" aria-current="page">
+            <NavLink to="/banque" className="rail-lien">
               {ICONE_DOSSIERS}
               Dossiers
-            </Link>
+            </NavLink>
           )}
         </nav>
       </aside>

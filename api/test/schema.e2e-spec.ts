@@ -90,7 +90,7 @@ describe('Schéma : garanties de la base', () => {
       },
     );
 
-    it('deux soumissions simultanées ne créent qu’une demande en cours', async () => {
+    it('deux soumissions simultanées ne créent qu’une demande en cours (scénario 4)', async () => {
       const resultats = await Promise.allSettled([
         creerDemande('SOUMISE'),
         creerDemande('SOUMISE'),

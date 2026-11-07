@@ -34,7 +34,7 @@ const TABLES_METIER = [
 
 type Reponse = { status: number; text: string; body: { elements: ElementReponse[] } };
 
-describe('Attaques contre l’agent (modèle piégé)', () => {
+describe('Attaques contre l’agent, modèle piégé (scénario 7)', () => {
   let pool: Pool;
   const piege = new ModelePiege();
   let appTest: Awaited<ReturnType<typeof demarrerAppTest>>;

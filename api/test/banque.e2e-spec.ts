@@ -98,7 +98,7 @@ describe('Banque simulée', () => {
     expect(await operations()).toBe(1);
   });
 
-  it('deux appels simultanés avec la même clé n’appliquent l’opération qu’une fois', async () => {
+  it('deux appels simultanés avec la même clé n’appliquent l’opération qu’une fois (scénario 5)', async () => {
     const [a, b] = await Promise.all([
       banque.appliquer('act-1', 'B-0001', 'ACTIVER', 25_000, MAINTENANT),
       banque.appliquer('act-1', 'B-0001', 'ACTIVER', 25_000, MAINTENANT),

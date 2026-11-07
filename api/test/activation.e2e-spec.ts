@@ -158,7 +158,7 @@ describe('Activation et reprise', () => {
       expect(await operationsBancaires()).toBe(1);
     });
 
-    it('deux relances simultanées n’activent qu’une fois', async () => {
+    it('deux relances simultanées n’activent qu’une fois (scénario 5)', async () => {
       await modeBanque('ECHEC');
       const { karim, demande } = await approuverDemandeDAmal();
       await modeBanque('SUCCES');

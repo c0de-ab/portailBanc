@@ -1,7 +1,7 @@
 import { HttpStatus, ValidationPipe, type ValidationError } from '@nestjs/common';
 import { ErreurApi, type ErreurDetaillee } from './erreur-api';
 
-// Validation de toutes les entrées (CLAUDE.md, section Sécurité) :
+// Validation de toutes les entrées :
 // - whitelist + forbidNonWhitelisted : un champ non déclaré dans le DTO (statut, version…)
 //   est refusé, jamais ignoré en silence ;
 // - transform : le corps devient une instance du DTO, avec les types déclarés.

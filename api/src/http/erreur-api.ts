@@ -1,6 +1,6 @@
 import { HttpException } from '@nestjs/common';
 
-// Une erreur au format unique de l'API (CLAUDE.md, règle 8) :
+// Une erreur au format unique de l'API :
 // { erreurs: [{ code, champ?, message }] }. `champ` est absent quand l'erreur ne porte
 // sur aucun champ (une erreur de version, par exemple).
 export type ErreurDetaillee = {

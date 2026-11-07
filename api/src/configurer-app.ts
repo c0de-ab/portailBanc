@@ -12,6 +12,13 @@ import { creerValidationPipe } from './http/validation';
 // exactement ce qui tourne en production.
 export function configurerApp(app: NestExpressApplication, dossierWeb: string): void {
   app.setGlobalPrefix('api');
+  // Ne pas annoncer la technologie du serveur.
+  app.disable('x-powered-by');
+  // Derrière un proxy HTTPS (TRUST_PROXY=true) : Express croit le proxy sur le protocole
+  // d'origine. Sans cela, avec COOKIE_SECURE=true, le cookie de session ne serait pas envoyé.
+  if (process.env.TRUST_PROXY === 'true') {
+    app.set('trust proxy', 1);
+  }
   // En premier : les en-têtes s'appliquent à toutes les réponses, frontend compris.
   app.use(enTetesSecurite);
   // Sessions serveur, seulement pour l'API : les fichiers du frontend n'en ont pas besoin.

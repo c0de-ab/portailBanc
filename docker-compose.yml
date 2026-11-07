@@ -5,8 +5,10 @@ services:
       POSTGRES_USER: portail
       POSTGRES_PASSWORD: portail
       POSTGRES_DB: portail
+    # Publié pour les tests et le développement, mais seulement sur la machine elle-même :
+    # la base n'est pas joignable depuis le réseau.
     ports:
-      - '5432:5432'
+      - '127.0.0.1:5432:5432'
     volumes:
       - db-data:/var/lib/postgresql/data
       # Crée la base de test au premier lancement (volume vide).

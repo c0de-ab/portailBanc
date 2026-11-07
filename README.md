@@ -464,4 +464,4 @@ Les commandes `migrate`, `seed` et `expire` exécutent le code compilé (`node d
 
 ## 14. Temps consacré
 
-**Quatre jours**, répartis entre l'analyse du cahier et la conception, le backend et les tests, l'agent IA, le frontend, et la livraison (Docker, CI, documentation).
+**Cinq jours**, répartis entre l'analyse du cahier et la conception, le backend et les tests, l'agent IA, le frontend, et la livraison (Docker, CI, documentation).

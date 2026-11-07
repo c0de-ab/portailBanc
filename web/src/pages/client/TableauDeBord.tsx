@@ -43,10 +43,7 @@ export function TableauDeBord() {
   return (
     <>
       <div className="entete">
-        <div className="colonne ecart-4">
-          {comptes.length === 1 && <p className="surtitre">Compte {comptes[0].numero}</p>}
-          <h1 className="h1">Mes plafonds de virement</h1>
-        </div>
+        <h1 className="h1">Mes plafonds de virement</h1>
       </div>
 
       <div className="g12">
@@ -131,7 +128,8 @@ function Coffre({ compte, demande }: { compte: Compte; demande: Demande | null }
       <div className="coffre-haut">
         <div className="colonne ecart-8">
           <p id={`plafond-${compte.id}`} className="coffre-label">
-            Plafond appliqué
+            {/* Chaque bandeau dit à quel compte s'applique le plafond. */}
+            Plafond appliqué sur le compte {compte.numero}
           </p>
           <GrandMontant montant={compte.plafondCourant} corps={64} />
           <p className="marge-haut-4">

@@ -2048,17 +2048,7 @@ a.panel:focus-visible {
   outline-offset: 2px;
 }
 
-/* Barre du haut : l'utilisateur connecté et la déconnexion, à droite */
-/* En haut à droite, alignée sur le bord droit du contenu. Elle flotte : l'en-tête de la
-   page (.entete) se place à sa gauche, sur la même ligne, au lieu d'en dessous. */
-.barre-haut {
-  float: right;
-  margin-left: 24px;
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 20px;
-}
+/* L'utilisateur connecté, en bas de la barre latérale (sur fond sombre). */
 .qui {
   display: flex;
   align-items: center;
@@ -2084,7 +2074,7 @@ a.panel:focus-visible {
 }
 .qui-nom {
   display: block;
-  color: #16202a;
+  color: #ffffff;
   font-weight: 500;
   line-height: 20px;
 }
@@ -2092,20 +2082,9 @@ a.panel:focus-visible {
   display: block;
   font-size: 13px;
   line-height: 20px;
-  color: #5a6472;
+  color: #8fa0b3;
 }
-.barre-haut .btn {
-  height: 40px;
-  padding: 0 16px;
-  font-size: 14px;
-}
-/* Sur mobile, la barre reprend sa propre ligne : l'en-tête n'aurait plus la place. */
 @media (max-width: 720px) {
-  .barre-haut {
-    float: none;
-    margin: 0 0 24px;
-    gap: 12px;
-  }
   .qui-detail {
     display: none;
   }
@@ -2842,14 +2821,121 @@ button.rail-lien {
   display: flex;
   flex-direction: column;
 }
-/* Sur mobile, l'indicateur prend sa propre ligne dans la barre du haut. */
+/* ---------- Le pied de la barre latérale : banque simulée, utilisateur, déconnexion ----------
+   Sur grand écran, la barre latérale reste fixe quand la page défile : ce qui est en bas reste
+   toujours visible. */
+@media (min-width: 721px) {
+  .rail {
+    position: sticky;
+    top: 0;
+    align-self: flex-start;
+    height: 100vh;
+  }
+}
+.rail-pied {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 12px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+.rail-deconnexion {
+  height: 40px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  color: #dbe4ef;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.rail-deconnexion:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+.rail-deconnexion:focus-visible {
+  outline: 2px solid #93abff;
+  outline-offset: 2px;
+}
+/* L'indicateur de la banque simulée, version sombre ; son choix s'ouvre vers le haut. */
+.rail .indicateur-bouton {
+  width: 100%;
+  justify-content: center;
+  border-color: rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.06);
+  color: #dbe4ef;
+}
+.rail .indicateur-bouton:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+}
+.rail .indicateur-bouton.indicateur-alerte {
+  border-color: #e0a84a;
+  background: rgba(242, 184, 96, 0.16);
+  color: #f8d9a6;
+}
+.rail .indicateur-choix {
+  top: auto;
+  bottom: calc(100% + 8px);
+  left: 0;
+  right: auto;
+  color: #16202a;
+}
+/* Sur mobile, la barre latérale devient une bande en haut : le pied se range à sa droite. */
 @media (max-width: 720px) {
-  .barre-haut {
+  .rail-pied {
+    margin-top: 0;
+    margin-left: auto;
+    flex-direction: row;
     flex-wrap: wrap;
-    row-gap: 8px;
+    align-items: center;
+    padding: 0;
+    border-top: 0;
   }
-  .indicateur-choix {
-    right: auto;
-    left: 0;
+  .rail .indicateur-bouton {
+    width: auto;
   }
+  .rail-deconnexion {
+    padding: 0 12px;
+  }
+  .rail .indicateur-choix {
+    top: calc(100% + 8px);
+    bottom: auto;
+    left: auto;
+    right: 0;
+  }
+}
+
+/* Connexion : le bouton en forme d'oeil, posé dans le champ du mot de passe. */
+.saisie-mdp {
+  position: relative;
+}
+.saisie-mdp .saisie {
+  width: 100%;
+  padding-right: 56px;
+}
+.saisie-mdp-bouton {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: #5a6472;
+  cursor: pointer;
+}
+.saisie-mdp-bouton:hover {
+  background: #efece6;
+  color: #16202a;
+}
+.saisie-mdp-bouton:focus-visible {
+  outline: 2px solid #3b5fd9;
+  outline-offset: 2px;
 }

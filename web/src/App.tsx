@@ -235,10 +235,8 @@ function Cadre({ children }: { children: ReactNode }) {
             </NavLink>
           )}
         </nav>
-      </aside>
-      <div className="zone">
-        {/* L'utilisateur connecté et la déconnexion, en haut à droite. */}
-        <header className="barre-haut">
+        {/* En bas de la barre latérale, qui reste fixe quand la page défile : toujours visible. */}
+        <div className="rail-pied">
           {/* Le mode de la banque simulée, global : visible sur toutes les pages de la banque. */}
           {!client && <IndicateurBanqueDemo />}
           <div className="qui">
@@ -250,10 +248,12 @@ function Cadre({ children }: { children: ReactNode }) {
               <span className="qui-detail">{libelleRole(roles)}</span>
             </span>
           </div>
-          <button type="button" className="btn btn-secondaire" onClick={() => void deconnecter()}>
+          <button type="button" className="rail-deconnexion" onClick={() => void deconnecter()}>
             Se déconnecter
           </button>
-        </header>
+        </div>
+      </aside>
+      <div className="zone">
         {/* Quand l'assistant a modifié une demande, la clé change : la page est rechargée et
             montre l'état réel. */}
         <main className="contenu" key={assistant.versionDonnees}>

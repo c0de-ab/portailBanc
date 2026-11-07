@@ -14,7 +14,6 @@ import {
   type Role,
   type Ton,
 } from '../../types';
-import { ModeBanqueDemo } from './ModeBanqueDemo';
 
 // Ce qui attend une décision de cet utilisateur. Un utilisateur à double rôle voit les deux
 // files (H18). Le serveur ne renvoie que les dossiers de son périmètre (R14).
@@ -66,7 +65,6 @@ export function ListeDossiers() {
           <p className="surtitre">{libelleRole(roles)}</p>
           <h1 className="h1">{titre}</h1>
         </div>
-        <ModeBanqueDemo />
       </div>
 
       {/* La synthèse des trois files ; chaque tuile mène à son tableau. */}

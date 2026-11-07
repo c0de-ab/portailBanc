@@ -2789,3 +2789,67 @@ button.rail-lien {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* ---------- Banque simulée : l'indicateur de la barre du haut ---------- */
+.indicateur-banque {
+  position: relative;
+}
+.indicateur-bouton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 14px;
+  border: 1px solid #d6d1c7;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #16202a;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.indicateur-bouton:hover {
+  border-color: #a9a397;
+}
+/* Un mode autre que « Normal » se voit : toutes les opérations bancaires en dépendent. */
+.indicateur-bouton.indicateur-alerte {
+  border-color: #e0a84a;
+  background: #fdf3e1;
+  color: #6b4100;
+}
+.indicateur-bouton:focus-visible {
+  outline: 2px solid #3b5fd9;
+  outline-offset: 2px;
+}
+.indicateur-choix {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 30;
+  width: min(360px, calc(100vw - 32px));
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+  border: 1px solid #e3dfd7;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 24px 48px -24px rgba(11, 27, 43, 0.4);
+}
+.indicateur-choix .segment {
+  display: flex;
+  flex-direction: column;
+}
+/* Sur mobile, l'indicateur prend sa propre ligne dans la barre du haut. */
+@media (max-width: 720px) {
+  .barre-haut {
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
+  .indicateur-choix {
+    right: auto;
+    left: 0;
+  }
+}

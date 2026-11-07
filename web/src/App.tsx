@@ -6,6 +6,7 @@ import { DetailDossier } from './pages/banque/DetailDossier';
 import { ListeDossiers } from './pages/banque/ListeDossiers';
 import { DetailDemande } from './pages/client/DetailDemande';
 import { FormulaireDemande } from './pages/client/FormulaireDemande';
+import { IndicateurBanqueDemo } from './pages/banque/ModeBanqueDemo';
 import { PanneauAssistant } from './pages/client/PanneauAssistant';
 import { TableauDeBord } from './pages/client/TableauDeBord';
 import { FournisseurAssistant, useAssistant } from './assistant';
@@ -238,6 +239,8 @@ function Cadre({ children }: { children: ReactNode }) {
       <div className="zone">
         {/* L'utilisateur connecté et la déconnexion, en haut à droite. */}
         <header className="barre-haut">
+          {/* Le mode de la banque simulée, global : visible sur toutes les pages de la banque. */}
+          {!client && <IndicateurBanqueDemo />}
           <div className="qui">
             <span className="avatar" aria-hidden="true">
               {utilisateur?.displayName.charAt(0)}

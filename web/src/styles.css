@@ -2762,3 +2762,30 @@ button.rail-lien {
 .chargement-session {
   padding: 40px;
 }
+
+/* Tableau de bord : le bandeau du plafond, plus compact que celui du détail d'une demande. */
+.coffre-compact {
+  padding: 28px 40px 24px;
+}
+/* La bulle « Appliqué » au-dessus de la jauge garde sa place, avec moins de réserve. */
+.coffre-compact .jauge {
+  padding-top: 40px;
+}
+.coffre-compact .encart-compte .ligne {
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+/* Les rappels des seuils, en pleine largeur : une seule ligne de quatre. */
+.regles.regles-ligne {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+@media (max-width: 1100px) {
+  .regles.regles-ligne {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 720px) {
+  .regles.regles-ligne {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

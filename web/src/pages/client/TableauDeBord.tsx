@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { api } from '../../api';
-import { useAssistant } from '../../assistant';
 import { EncartEtat, Etat, Frise, GrandMontant, Jauge } from '../../composants';
 import {
   dateBreve,
@@ -60,7 +59,6 @@ export function TableauDeBord() {
             ) : (
               <SansDemande key={`${compte.id}-vide`} compte={compte} />
             ),
-            <AideAssistant key={`${compte.id}-aide`} sansDemande={!demande} />,
           ];
         })}
 
@@ -129,14 +127,14 @@ function Coffre({ compte, demande }: { compte: Compte; demande: Demande | null }
       ? demande.plafondDemande
       : null;
   return (
-    <section className="coffre span-12 coffre-large" aria-labelledby={`plafond-${compte.id}`}>
+    <section className="coffre span-12 coffre-compact" aria-labelledby={`plafond-${compte.id}`}>
       <div className="coffre-haut">
-        <div className="colonne ecart-12">
+        <div className="colonne ecart-8">
           <p id={`plafond-${compte.id}`} className="coffre-label">
             Plafond appliqué
           </p>
-          <GrandMontant montant={compte.plafondCourant} />
-          <p className="marge-haut-8">
+          <GrandMontant montant={compte.plafondCourant} corps={64} />
+          <p className="marge-haut-4">
             {compte.plafondTemporaireActif ? (
               <Etat ton="actif">Plafond temporaire actif</Etat>
             ) : (
@@ -164,7 +162,7 @@ function Coffre({ compte, demande }: { compte: Compte; demande: Demande | null }
           </div>
         </dl>
       </div>
-      <div className="marge-haut-32">
+      <div className="marge-haut-8">
         <Jauge
           plafondInitial={compte.plafondInitial}
           applique={compte.plafondCourant}
@@ -179,7 +177,7 @@ function Coffre({ compte, demande }: { compte: Compte; demande: Demande | null }
 function DemandeEnCours({ compte, demande }: { compte: Compte; demande: Demande }) {
   const libelle = libelleClient(demande);
   return (
-    <section className="panel span-8 etire interieur-32" aria-labelledby={`demande-${demande.id}`}>
+    <section className="panel span-12 interieur-32" aria-labelledby={`demande-${demande.id}`}>
       <div className="panel-tete">
         <div className="colonne ecart-4">
           <p className="surtitre">Demande en cours</p>
@@ -221,10 +219,7 @@ function DemandeEnCours({ compte, demande }: { compte: Compte; demande: Demande 
 
 function SansDemande({ compte }: { compte: Compte }) {
   return (
-    <section
-      className="panel colonne span-8 etire interieur-32"
-      aria-labelledby={`aucune-${compte.id}`}
-    >
+    <section className="panel colonne span-12 interieur-32" aria-labelledby={`aucune-${compte.id}`}>
       <div className="colonne ecart-8">
         <p className="surtitre">Demande en cours</p>
         <h2 id={`aucune-${compte.id}`} className="h2">
@@ -235,7 +230,7 @@ function SansDemande({ compte }: { compte: Compte }) {
           {enDirhams(PLAFOND_MAXIMUM)}.
         </p>
       </div>
-      <div className="regles">
+      <div className="regles regles-ligne">
         <div className="regle">
           <span className="regle-val">Jusqu’à {enDirhams(SEUIL_DECISION_CONSEILLER)}</span>
           <span className="t13 muted">Votre conseiller décide.</span>
@@ -259,51 +254,5 @@ function SansDemande({ compte }: { compte: Compte }) {
         Demander une augmentation temporaire
       </Link>
     </section>
-  );
-}
-
-// Questions proposées : elles ouvrent le panneau de l'assistant avec la question déjà saisie,
-// sans l'envoyer.
-// Ce sont des questions auxquelles le mode simulé sait répondre.
-const QUESTIONS_SANS_DEMANDE = [
-  'Quel est mon plafond actuel ?',
-  'Je voudrais 25 000 DH pendant 3 jours',
-];
-const QUESTIONS_AVEC_DEMANDE = ['Où en est ma demande ?', 'Quel est mon plafond actuel ?'];
-
-function AideAssistant({ sansDemande }: { sansDemande: boolean }) {
-  const { ouvrir } = useAssistant();
-  const questions = sansDemande ? QUESTIONS_SANS_DEMANDE : QUESTIONS_AVEC_DEMANDE;
-  return (
-    <aside className="panel colonne span-4 etire interieur-32 ecart-12" aria-label="Assistant">
-      <p className="surtitre">Assistant</p>
-      <h2 className="h3">
-        {sansDemande
-          ? 'Besoin d’aide pour préparer votre demande ?'
-          : 'Une question sur votre plafond ?'}
-      </h2>
-      <p className="muted">
-        L’assistant vous aide à préparer une demande. Il ne soumet ni ne décide jamais.
-      </p>
-      <div className="suggestions marge-haut-8" aria-label="Questions fréquentes">
-        {questions.map((question) => (
-          <button
-            key={question}
-            type="button"
-            className="suggestion"
-            onClick={() => ouvrir(question)}
-          >
-            {question}
-          </button>
-        ))}
-      </div>
-      <button
-        type="button"
-        className="lien lien-bouton marge-haut-auto aligne-debut"
-        onClick={() => ouvrir()}
-      >
-        Demander à l’assistant
-      </button>
-    </aside>
   );
 }

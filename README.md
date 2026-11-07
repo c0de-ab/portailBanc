@@ -82,29 +82,6 @@ Le mot de passe est le même pour tous : **`Demo-2026!`**. Ces comptes n'existen
 
 ![Cycle de vie d'une demande](docs/schemas/workflow.png)
 
-Le même workflow en version texte :
-
-```mermaid
-stateDiagram-v2
-    direction LR
-    [*] --> Brouillon
-    Brouillon --> Soumise : confirmation du client (R7)
-    Brouillon --> Abandonnée
-    Soumise --> Complément : le conseiller demande un complément
-    Complément --> Soumise : le client complète et reconfirme
-    Soumise --> Approuvée : conseiller, jusqu'à 30 000 DH
-    Soumise --> Rejetée : conseiller, jusqu'à 30 000 DH
-    Soumise --> AttenteSuperviseur : recommandation, au-delà de 30 000 DH
-    AttenteSuperviseur --> Approuvée : un autre superviseur (R9)
-    AttenteSuperviseur --> Rejetée : un autre superviseur (R9)
-    Soumise --> Annulée : le client annule (R12)
-    Complément --> Annulée
-    AttenteSuperviseur --> Annulée
-    Approuvée --> Approuvée : échec de la banque, puis relance
-    Approuvée --> Active : la banque applique le plafond
-    Active --> Expirée : échéance, désactivation confirmée par la banque
-```
-
 Le projet distingue trois notions, que l'interface ne confond jamais :
 
 | Notion | Exemple | Où elle vit |
@@ -139,33 +116,6 @@ Chaque règle a un code. Ce code se retrouve dans les erreurs de l'API, dans les
 ## 4. Architecture
 
 ![Architecture du portail bancaire](docs/schemas/architecture.png)
-
-La même vue en version texte :
-
-```mermaid
-flowchart LR
-    subgraph Navigateur
-        WEB["Frontend React + Vite"]
-    end
-
-    subgraph app ["Conteneur app (Node.js 24)"]
-        API["API NestJS<br/>préfixe /api"]
-        STATIC["Frontend construit<br/>(web/dist)"]
-        CMD["Commandes<br/>migrate, seed, expire"]
-    end
-
-    subgraph db ["Conteneur db"]
-        PG[("PostgreSQL 16<br/>tables métier, events,<br/>sessions, banque simulée")]
-    end
-
-    GROQ["API Groq<br/>(mode connecté seulement)"]
-
-    WEB -- "fetch /api (cookie de session)" --> API
-    WEB -- "pages" --> STATIC
-    API -- "SQL paramétré (pg)" --> PG
-    CMD -- "SQL paramétré (pg)" --> PG
-    API -. "fetch, 15 s au plus" .-> GROQ
-```
 
 - **Une seule application :** l'API NestJS sert aussi le frontend construit. Toutes les routes de l'API sont sous `/api`.
 - **Une seule base :** PostgreSQL contient les tables métier, l'historique (`events`), les sessions et la banque simulée (`bank_limits`, `bank_operations`). La banque n'a aucune clé étrangère vers les tables métier : le lien passe par une clé d'opération, comme avec un vrai système externe.

@@ -8,6 +8,21 @@ import type { AppelOutil, LlmClient, MessageModele, ReponseModele } from './llm-
 
 type Intention = 'contournement' | 'autre-client' | 'demande' | 'etat' | 'plafond' | 'aide';
 
+// Le client ne voit jamais un statut technique (ACTIVE, SOUMISE…) : les mêmes mots que l'écran.
+const STATUT_LISIBLE: Record<string, string> = {
+  BROUILLON: 'brouillon, non soumis',
+  SOUMISE: 'en cours d’examen',
+  COMPLEMENT_DEMANDE: 'complément demandé',
+  ATTENTE_SUPERVISEUR: 'en cours de validation',
+  APPROUVEE: 'décision favorable',
+  ACTIVE: 'plafond temporaire actif',
+  EXPIREE: 'expirée',
+  REJETEE: 'rejetée',
+  ANNULEE: 'annulée',
+  ABANDONNEE: 'brouillon abandonné',
+};
+const lisible = (statut: string) => STATUT_LISIBLE[statut] ?? statut;
+
 const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
 
 export class LlmSimule implements LlmClient {
@@ -65,7 +80,7 @@ function decider(messages: MessageModele[]): ReponseModele {
       return dire(
         demandes.length === 0
           ? 'Vous n’avez encore aucune demande.'
-          : `Vos demandes : ${demandes.map((d) => `${d.reference ?? 'brouillon'} (${d.statut})`).join(', ')}.`,
+          : `Vos demandes : ${demandes.map((d) => `${d.reference ?? 'brouillon'} (${lisible(d.statut)})`).join(', ')}.`,
       );
     }
 
@@ -110,7 +125,7 @@ function parcoursDemande(
   const enCours = liste[0]?.demandeEnCours;
   if (enCours && enCours.statut !== 'COMPLEMENT_DEMANDE') {
     return dire(
-      `Ce compte a déjà une demande en cours (${enCours.statut}) : une seule à la fois (R6).`,
+      `Ce compte a déjà une demande en cours (${lisible(enCours.statut)}) : une seule à la fois (R6).`,
     );
   }
 
@@ -186,7 +201,7 @@ function resumeComptes({ comptes, dossierComplet }: ResultatComptes): string {
     `Votre plafond actuel est de ${compte.plafondCourant.toLocaleString('fr-FR')} DH.`,
   ];
   if (compte.demandeEnCours) {
-    parties.push(`Une demande est en cours (${compte.demandeEnCours.statut}).`);
+    parties.push(`Une demande est en cours (${lisible(compte.demandeEnCours.statut)}).`);
   }
   if (!dossierComplet) {
     parties.push('Votre dossier client est incomplet : aucune demande ne peut être soumise.');

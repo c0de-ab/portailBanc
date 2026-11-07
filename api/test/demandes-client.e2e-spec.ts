@@ -1,6 +1,7 @@
 import type { Pool } from 'pg';
 import { executerTransaction } from '../src/base/transaction';
 import type { VueDemandeClient } from '../src/demandes/demande';
+import * as accesClient from '../src/demandes/acces-client';
 import { creerComptesDemo } from '../src/demo/comptes-demo';
 import { codesDe, demarrerAppTest, erreursDe } from './app-test';
 import { creerPoolTest, viderBase } from './outils-base';
@@ -267,6 +268,33 @@ describe('Parcours du client', () => {
 
       expect(reponse.status).toBe(422);
       expect(codesDe(reponse)).toEqual(['R5']);
+    });
+
+    it('R5 est revérifié dans la transaction : un dossier devenu incomplet après la première lecture est refusé', async () => {
+      const cookie = await appTest.connecter(SARA);
+      const { demande } = await brouillonRempli(cookie, 20_000);
+      // La première lecture, avant la transaction, voit un dossier complet ; en base, celui de
+      // Sara est incomplet : c'est le cas d'un statut qui change entre les deux lectures.
+      const lectureReelle = accesClient.contexteDuCompte;
+      const lecture = jest.spyOn(accesClient, 'contexteDuCompte');
+      lecture.mockImplementationOnce(async (base, compteId) => ({
+        ...(await lectureReelle(base, compteId)),
+        dossierComplet: true,
+      }));
+
+      try {
+        const reponse = await soumettre(cookie, demande);
+
+        // La première lecture a bien vu un dossier complet : c'est la transaction qui refuse.
+        expect(lecture).toHaveBeenCalledTimes(1);
+        expect(reponse.status).toBe(422);
+        expect(codesDe(reponse)).toEqual(['R5']);
+        expect(
+          (await pool.query("SELECT 1 FROM events WHERE action = 'SOUMISSION'")).rowCount,
+        ).toBe(0);
+      } finally {
+        lecture.mockRestore();
+      }
     });
 
     it('refuse 60 000 DH sans justificatif (422 R4, scénario 2)', async () => {

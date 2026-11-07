@@ -64,6 +64,16 @@ describe('Agent IA (mode simulé)', () => {
     expect(explication(elements)).toMatch(/10\s000 DH/);
   });
 
+  it('parle au client avec les mots de l’écran, jamais avec un statut technique', async () => {
+    const amal = await appTest.connecter(AMAL);
+    await parcours(() => http()).brouillon(amal, 25_000);
+
+    const texte = explication(await envoyer(amal, 'Où en est ma demande ?'));
+
+    expect(texte).toContain('brouillon, non soumis');
+    expect(texte).not.toMatch(/\b(BROUILLON|SOUMISE|ATTENTE_SUPERVISEUR|APPROUVEE|ACTIVE)\b/);
+  });
+
   describe('Parcours normal : du message à la carte, puis au clic du client', () => {
     it('prépare le brouillon et propose la carte, mais ne soumet rien', async () => {
       const amal = await appTest.connecter(AMAL);
@@ -236,6 +246,38 @@ describe('Agent IA (mode simulé)', () => {
 
       await http().post('/api/auth/deconnexion').set('Cookie', amal);
       expect(await nombre('SELECT 1 FROM session')).toBe(0);
+    });
+
+    it('deux messages simultanés : aucun échange accepté n’est perdu dans la mémoire', async () => {
+      const amal = await appTest.connecter(AMAL);
+      const textes = ['Question A', 'Question B'];
+
+      const reponses = await Promise.all(
+        textes.map((message) =>
+          http().post('/api/agent/messages').set('Cookie', amal).send({ message }),
+        ),
+      );
+
+      // L'ordre d'arrivée dépend de la machine : les deux peuvent passer l'une après l'autre,
+      // ou la seconde être refusée pendant la première. Ce qui ne dépend jamais du timing :
+      // chaque message accepté est dans la mémoire, et un refus est un 409 AGENT_OCCUPE.
+      const acceptes: string[] = [];
+      reponses.forEach((reponse, i) => {
+        if (reponse.status === 200) {
+          acceptes.push(textes[i]);
+        } else {
+          expect(reponse.status).toBe(409);
+          expect(codesDe(reponse)).toEqual(['AGENT_OCCUPE']);
+        }
+      });
+      expect(acceptes.length).toBeGreaterThan(0);
+      const { rows } = await pool.query<{
+        sess: { conversation: { role: string; texte?: string }[] };
+      }>('SELECT sess FROM session');
+      const enMemoire = rows[0].sess.conversation
+        .filter((m) => m.role === 'client')
+        .map((m) => m.texte);
+      expect([...enMemoire].sort()).toEqual([...acceptes].sort());
     });
 
     it('« Effacer la conversation » retire la mémoire de la session, sans déconnecter', async () => {

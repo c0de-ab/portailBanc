@@ -81,10 +81,8 @@ export class DossiersService {
 
   async lister(agent: UtilisateurSession): Promise<Demande[]> {
     const { rows } = await this.base.requete<LigneDemande>(
-      `SELECT ${COLONNES_DEMANDE} FROM requests
-        WHERE ${FILTRE_PERIMETRE}
-        ORDER BY submitted_at`,
-      valeursDuPerimetre(agent),
+      DOSSIERS_DU_PERIMETRE,
+      parametresDuPerimetre(agent, null),
     );
     return rows.map(versDemande);
   }
@@ -376,8 +374,8 @@ export class DossiersService {
   // Règle 4 : le filtre de périmètre est DANS la requête. Hors périmètre ou inexistant : 404.
   private async charger(agent: UtilisateurSession, id: string): Promise<Demande> {
     const { rows } = await this.base.requete<LigneDemande>(
-      `SELECT ${COLONNES_DEMANDE} FROM requests WHERE id = $5 AND ${FILTRE_PERIMETRE}`,
-      [...valeursDuPerimetre(agent), id],
+      DOSSIERS_DU_PERIMETRE,
+      parametresDuPerimetre(agent, id),
     );
     if (!rows[0]) {
       throw introuvable();
@@ -418,16 +416,22 @@ function roleDeLaDecision(acteurs: readonly Acteur[]): NiveauDeValidation {
   return role;
 }
 
-// R14 : le portefeuille du conseiller, ou les dossiers TRANSMIS à
-// l'équipe du superviseur, et l'union des deux pour un double rôle (H18). Un texte fixe : les
-// valeurs passent par $1 à $4, jamais par concaténation.
-const FILTRE_PERIMETRE = `(
-  ($1::boolean AND advisor_id = $2)
-  OR ($3::boolean AND team_id = $4 AND recommender_id IS NOT NULL)
-)`;
+// R14 : le portefeuille du conseiller, ou les dossiers TRANSMIS à l'équipe du superviseur, et
+// l'union des deux pour un double rôle (H18). UNE requête pour la liste et pour un dossier :
+// $1 est l'identifiant du dossier, ou NULL pour toute la liste ; $2 à $5, le périmètre. Les
+// numéros des paramètres ne sont écrits qu'ici, et leurs valeurs juste en dessous : un texte
+// fixe, aucune concaténation.
+const DOSSIERS_DU_PERIMETRE = `SELECT ${COLONNES_DEMANDE} FROM requests
+  WHERE ($1::uuid IS NULL OR id = $1)
+    AND (
+      ($2::boolean AND advisor_id = $3)
+      OR ($4::boolean AND team_id = $5 AND recommender_id IS NOT NULL)
+    )
+  ORDER BY submitted_at`;
 
-function valeursDuPerimetre(agent: UtilisateurSession): unknown[] {
+function parametresDuPerimetre(agent: UtilisateurSession, id: string | null): unknown[] {
   return [
+    id,
     agent.roles.includes('CONSEILLER'),
     agent.id,
     agent.roles.includes('SUPERVISEUR'),

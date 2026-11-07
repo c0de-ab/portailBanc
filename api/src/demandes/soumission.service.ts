@@ -70,6 +70,21 @@ export class SoumissionService {
     const { id } = demande;
     try {
       return await this.base.transaction(async (tx) => {
+        // R5 relu DANS la transaction, avec un verrou partagé sur la ligne du client : son dossier
+        // ne peut pas devenir incomplet entre la vérification et la soumission. Les règles sont
+        // revérifiées avec cette valeur, par le domaine, comme avant la transaction.
+        const dossier = await tx.query<{ dossier_complet: boolean }>(
+          'SELECT dossier_complet FROM clients WHERE id = $1 FOR SHARE',
+          [client.clientId],
+        );
+        const erreurs = verifierRegles(contenuDe(demande), {
+          ...contexte,
+          dossierComplet: dossier.rows[0]?.dossier_complet ?? false,
+        });
+        if (erreurs.length > 0) {
+          throw refuser(erreurs);
+        }
+
         // H13 : la référence est tirée à la PREMIÈRE soumission seulement.
         const reference = demande.reference ?? (await nouvelleReference(tx, maintenant));
         const { rows } = await tx.query<LigneDemande>(

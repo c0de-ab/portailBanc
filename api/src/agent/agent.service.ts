@@ -20,12 +20,35 @@ export type ReponseAgent = { elements: ElementReponse[]; memoire: MessageModele[
 @Injectable()
 export class AgentService {
   private readonly journal = new Logger(AgentService.name);
+  // Les sessions dont un message est en cours de traitement (voir uneALaFois).
+  private readonly sessionsOccupees = new Set<string>();
 
   constructor(
     @Inject(LLM_CLIENT) private readonly modele: LlmClient,
     private readonly outils: OutilsService,
     private readonly historique: HistoriqueService,
   ) {}
+
+  // Un seul message à la fois par session. Deux messages simultanés liraient la même mémoire,
+  // et le dernier enregistré effacerait l'échange de l'autre. Le second est donc refusé (409),
+  // le temps que le premier ait répondu ET enregistré la mémoire. L'API tourne en un seul
+  // processus : un ensemble en mémoire suffit.
+  async uneALaFois<T>(cleSession: string, travail: () => Promise<T>): Promise<T> {
+    if (this.sessionsOccupees.has(cleSession)) {
+      throw new ErreurApi(HttpStatus.CONFLICT, [
+        {
+          code: 'AGENT_OCCUPE',
+          message: 'L’assistant répond déjà à votre message précédent : attendez sa réponse.',
+        },
+      ]);
+    }
+    this.sessionsOccupees.add(cleSession);
+    try {
+      return await travail();
+    } finally {
+      this.sessionsOccupees.delete(cleSession);
+    }
+  }
 
   // Un message du client : le modèle choisit des outils, le SERVEUR les exécute et décide de
   // tout. L'identité vient de la session (règle 3), jamais du message ni du modèle.
@@ -134,9 +157,16 @@ function enMemoire(messages: MessageModele[]): MessageModele[] {
     debuts.length > ECHANGES_EN_MEMOIRE ? debuts[debuts.length - ECHANGES_EN_MEMOIRE] : 0;
   return messages
     .slice(depart)
-    .map((m) =>
-      m.role === 'outil'
-        ? { ...m, resultat: JSON.stringify(m.resultat).slice(0, RESUME_OUTIL_MAXIMUM) }
-        : m,
-    );
+    .map((m) => (m.role === 'outil' ? { ...m, resultat: resumerResultat(m.resultat) } : m));
+}
+
+// Le résultat d'un outil, gardé en mémoire : tel quel s'il est court, sinon son début, marqué
+// comme tronqué. Couper le texte JSON au milieu donnerait un JSON invalide au modèle ; un objet
+// { tronque, debut } reste lisible, et dit clairement qu'il manque la fin.
+export function resumerResultat(resultat: unknown): unknown {
+  const texte = JSON.stringify(resultat) ?? 'null';
+  if (texte.length <= RESUME_OUTIL_MAXIMUM) {
+    return resultat;
+  }
+  return { tronque: true, debut: texte.slice(0, RESUME_OUTIL_MAXIMUM) };
 }

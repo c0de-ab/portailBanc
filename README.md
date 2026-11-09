@@ -427,7 +427,8 @@ Le cahier des charges laisse des points ouverts. Voici les choix retenus pour le
 - **Numérotation des références.** Une soumission refusée peut laisser un trou dans la séquence ; l'unicité n'est pas affectée.
 - **Justificatif orphelin.** Si la validation de la transaction échoue juste après l'écriture du fichier (cas très rare), le fichier reste sur le disque sans être référencé.
 
-**Volontairement non inclus**, pour garder un code simple à expliquer :
+**Volontairement non inclus :**
+
 - **ORM :** les garanties reposent sur du SQL précis (index partiels, `UPDATE` conditionnels, séquence) ;
 - **worker de reprise automatique et tâche planifiée :** le cahier demande qu'une reprise soit *possible* sans double activation, et une commande de démonstration se rejoue facilement ;
 - **table de clés d'idempotence HTTP :** déjà couvert par la version, les index uniques et la clé bancaire ;

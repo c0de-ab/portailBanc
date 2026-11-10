@@ -1,184 +1,39 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router';
-import { api, ErreurApi, type AvecAvertissements } from '../../api';
+import { Link, useParams } from 'react-router';
 import { useAssistant } from '../../assistant';
-import { erreursDe, Etat, GrandMontant, Jauge, ListeErreurs } from '../../composants';
-import { creerFile } from '../../file';
-import { EcranConfirmation, quiDecide } from './EcranConfirmation';
-import {
-  enDirhams,
-  enJours,
-  libelleClient,
-  PLAFOND_MAXIMUM,
-  SEUIL_JUSTIFICATIF,
-  type Demande,
-  type ErreurDetaillee,
-} from '../../types';
+import { Etat, ListeErreurs } from '../../composants';
+import { enDirhams, enJours, libelleClient, PLAFOND_MAXIMUM } from '../../types';
+import { Avertissements, ChampJustificatif } from './ChampJustificatif';
+import { EcranConfirmation } from './EcranConfirmation';
+import { RecapitulatifDemande } from './RecapitulatifDemande';
+import { entier, useFormulaireDemande } from './useFormulaireDemande';
 
 // Un brouillon (/client/comptes/:compteId/brouillon) ou une demande en « Complément demandé »
-// (/client/demandes/:id/completer). Chaque champ est enregistré quand il perd le focus ; le
-// serveur renvoie alors les avertissements de verifierRegles (H23), qui ne bloquent rien.
-// La soumission passe par une étape de confirmation explicite (R7).
-
-const MESSAGE_CONFLIT =
-  'La demande a changé entre-temps (dans un autre onglet ou avec l’assistant). Elle a été rechargée : vérifiez-la avant de continuer.';
-
-type Champs = { plafond: string; duree: string; motif: string };
-
-const champsDe = (d: Demande): Champs => ({
-  plafond: d.plafondDemande === null ? '' : String(d.plafondDemande),
-  duree: d.dureeJours === null ? '' : String(d.dureeJours),
-  motif: d.motif ?? '',
-});
-
-// Le brouillon est obtenu ou créé par la même route (idempotente) ; un complément est relu.
-async function lireDemande(compteId: string | undefined, id: string | undefined) {
-  const r: AvecAvertissements = compteId
-    ? await api.obtenirBrouillon(compteId)
-    : { demande: (await api.demande(id!)).demande, avertissements: [] };
-  const { comptes } = await api.comptes();
-  const plafondInitial = comptes.find((c) => c.id === r.demande.compteId)?.plafondInitial ?? null;
-  return { r, plafondInitial };
-}
+// (/client/demandes/:id/completer). La logique (chargement, enregistrements, conflits,
+// soumission) est dans useFormulaireDemande ; cette page ne fait qu'afficher. La soumission
+// passe par une étape de confirmation explicite (R7).
 
 export function FormulaireDemande() {
   const { compteId, id } = useParams();
-  const naviguer = useNavigate();
   const { ouvrir } = useAssistant();
-  const [demande, setDemande] = useState<Demande | null>(null);
-  const [plafondInitial, setPlafondInitial] = useState<number | null>(null);
-  const [champs, setChamps] = useState<Champs>({ plafond: '', duree: '', motif: '' });
-  const [avertissements, setAvertissements] = useState<ErreurDetaillee[]>([]);
-  const [erreurs, setErreurs] = useState<ErreurDetaillee[]>([]);
-  const [info, setInfo] = useState<string | null>(null);
-  const [enregistrement, setEnregistrement] = useState(false);
-  const [confirmation, setConfirmation] = useState(false);
-
-  // La dernière demande connue, avec sa version : les enregistrements s'enchaînent dans l'ordre,
-  // chacun partant de la version renvoyée par le précédent.
-  const derniere = useRef<Demande | null>(null);
-  const [ajouterALaFile] = useState(creerFile);
-
-  const appliquer = useCallback((r: AvecAvertissements) => {
-    derniere.current = r.demande;
-    setDemande(r.demande);
-    setAvertissements(r.avertissements);
-  }, []);
-
-  // La lecture renvoie les données ; leur affichage est fait ensuite, hors de l'effet.
-  const afficher = useCallback(
-    ({ r, plafondInitial }: Awaited<ReturnType<typeof lireDemande>>) => {
-      setPlafondInitial(plafondInitial);
-      appliquer(r);
-      setChamps(champsDe(r.demande));
-    },
-    [appliquer],
-  );
-  const charger = useCallback(
-    async () => afficher(await lireDemande(compteId, id)),
-    [compteId, id, afficher],
-  );
-
-  useEffect(() => {
-    // Si l'adresse change avant la réponse (autre dossier), l'ancienne réponse est ignorée.
-    let actif = true;
-    lireDemande(compteId, id)
-      .then((d) => actif && afficher(d))
-      .catch(
-        (e: unknown) => actif && setErreurs(erreursDe(e, 'Impossible de charger la demande.')),
-      );
-    return () => {
-      actif = false;
-    };
-  }, [compteId, id, afficher]);
-
-  // Toute écriture passe par ici : l'erreur est affichée, un conflit recharge la demande.
-  // La tâche ne lève jamais : un échec, même du rechargement, est affiché, et la file continue.
-  function executer(action: (d: Demande) => Promise<AvecAvertissements | void>) {
-    return ajouterALaFile(async () => {
-      setEnregistrement(true);
-      setErreurs([]);
-      try {
-        const r = await action(derniere.current!);
-        if (r) {
-          appliquer(r);
-        }
-      } catch (e) {
-        if (e instanceof ErreurApi && e.estUnConflit) {
-          setConfirmation(false);
-          setInfo(MESSAGE_CONFLIT);
-          await charger().catch((rechargement: unknown) => setErreurs(erreursDe(rechargement)));
-        } else {
-          setErreurs(erreursDe(e));
-        }
-      } finally {
-        setEnregistrement(false);
-      }
-    });
-  }
-
-  // Un nombre entier, ou null si le champ est vide ; undefined si la saisie n'est pas un entier.
-  function entier(texte: string): number | null | undefined {
-    if (texte.trim() === '') {
-      return null;
-    }
-    const n = Number(texte.replace(/\s/g, ''));
-    return Number.isInteger(n) ? n : undefined;
-  }
-
-  function enregistrerPlafond() {
-    const valeur = entier(champs.plafond);
-    if (valeur === undefined) {
-      setErreurs([
-        { code: 'R1', champ: 'plafondDemande', message: 'Saisissez un montant entier en dirhams.' },
-      ]);
-      return;
-    }
-    if (valeur !== derniere.current?.plafondDemande) {
-      void executer((d) => api.modifier(d, { plafondDemande: valeur }));
-    }
-  }
-
-  function enregistrerDuree(texte: string) {
-    setChamps((c) => ({ ...c, duree: texte }));
-    void executer((d) => api.modifier(d, { dureeJours: entier(texte) ?? null }));
-  }
-
-  function enregistrerMotif() {
-    const valeur = champs.motif === '' ? null : champs.motif;
-    if (valeur !== derniere.current?.motif) {
-      void executer((d) => api.modifier(d, { motif: valeur }));
-    }
-  }
-
-  function deposer(fichier: File | undefined) {
-    if (fichier) {
-      void executer((d) => api.deposerJustificatif(d, fichier));
-    }
-  }
-
-  async function soumettre() {
-    // Ce que le client a vu sur l'écran de confirmation, avec la version lue (R7).
-    const vue = derniere.current!;
-    await executer(async (d) => {
-      await api.soumettre({
-        id: d.id,
-        version: vue.version,
-        plafondDemande: vue.plafondDemande!,
-        dureeJours: vue.dureeJours!,
-      });
-      naviguer(`/client/demandes/${d.id}`, { replace: true });
-    });
-  }
-
-  async function abandonner() {
-    if (window.confirm('Abandonner ce brouillon ? Il restera visible dans votre historique.')) {
-      await executer(async (d) => {
-        await api.abandonner(d);
-        naviguer('/client', { replace: true });
-      });
-    }
-  }
+  const {
+    demande,
+    plafondInitial,
+    champs,
+    setChamps,
+    avertissements,
+    erreurs,
+    info,
+    setInfo,
+    enregistrement,
+    confirmation,
+    setConfirmation,
+    enregistrerPlafond,
+    enregistrerDuree,
+    enregistrerMotif,
+    deposer,
+    soumettre,
+    abandonner,
+  } = useFormulaireDemande(compteId, id);
 
   if (!demande) {
     return erreurs.length > 0 ? (
@@ -320,34 +175,11 @@ export function FormulaireDemande() {
           </div>
 
           {justificatifUtile && (
-            <div className="champ">
-              <div className="etiquette-ligne">
-                <label className="etiquette" htmlFor="f-justif">
-                  Justificatif
-                </label>
-                {justificatifManquant ? (
-                  <span className="t13 texte-obligatoire">Obligatoire</span>
-                ) : (
-                  <span className="t13 muted">Enregistré</span>
-                )}
-              </div>
-              <div className={justificatifManquant ? 'depot' : 'depot depot-neutre'}>
-                <div className="colonne ecart-4 min-0">
-                  <span className="poids-500">
-                    {demande.justificatifNom
-                      ? `Fichier enregistré : ${demande.justificatifNom}`
-                      : 'Aucun fichier déposé'}
-                  </span>
-                  <span className="aide">PDF, JPEG ou PNG, 2 Mo maximum.</span>
-                </div>
-                <input
-                  id="f-justif"
-                  type="file"
-                  accept="application/pdf,image/jpeg,image/png"
-                  onChange={(e) => deposer(e.target.files?.[0])}
-                />
-              </div>
-            </div>
+            <ChampJustificatif
+              demande={demande}
+              manquant={justificatifManquant}
+              deposer={deposer}
+            />
           )}
 
           <ListeErreurs erreurs={erreurs} />
@@ -379,77 +211,15 @@ export function FormulaireDemande() {
           </div>
         </form>
 
-        <aside className="coffre span-5 interieur-32" aria-labelledby="recap-titre">
-          <div className="colonne ecart-24">
-            <div className="colonne ecart-8">
-              <h2 id="recap-titre" className="coffre-label">
-                Récapitulatif
-              </h2>
-              <p className="t13 muted">Plafond demandé</p>
-              {plafond === null ? (
-                <p className="montant-s muted">Non renseigné</p>
-              ) : (
-                <GrandMontant montant={plafond} corps={64} />
-              )}
-            </div>
-
-            {plafondInitial !== null && (
-              <Jauge
-                plafondInitial={plafondInitial}
-                applique={plafondInitial}
-                demande={plafond}
-                horsBornes={horsBornes}
-              />
-            )}
-
-            <div className="coffre-encart lignes encart-lignes">
-              <div className="ligne">
-                <span className="ligne-cle">Plafond habituel</span>
-                <span className="ligne-val">
-                  {plafondInitial === null ? '…' : enDirhams(plafondInitial)}
-                </span>
-              </div>
-              <div className="ligne">
-                <span className="ligne-cle">Durée</span>
-                <span className="ligne-val">
-                  {champs.duree === '' ? 'Non renseignée' : enJours(Number(champs.duree))}
-                </span>
-              </div>
-              <div className="ligne">
-                <span className="ligne-cle">Décision</span>
-                <span className="ligne-val">{quiDecide(plafond)}</span>
-              </div>
-              <div className="ligne">
-                <span className="ligne-cle">Justificatif</span>
-                <span className="ligne-val">
-                  {demande.justificatifNom ??
-                    (justificatifManquant
-                      ? 'Obligatoire, à déposer'
-                      : `Facultatif jusqu’à ${enDirhams(SEUIL_JUSTIFICATIF)}`)}
-                </span>
-              </div>
-            </div>
-          </div>
-        </aside>
+        <RecapitulatifDemande
+          demande={demande}
+          plafond={plafond}
+          plafondInitial={plafondInitial}
+          duree={champs.duree}
+          horsBornes={horsBornes}
+          justificatifManquant={justificatifManquant}
+        />
       </div>
     </>
-  );
-}
-
-// Les avertissements viennent du serveur (verifierRegles) : ce sont des données du système.
-function Avertissements({ avertissements }: { avertissements: ErreurDetaillee[] }) {
-  return (
-    <div aria-live="polite">
-      {avertissements.length > 0 && (
-        <div className="message message-avertissement">
-          <p className="poids-500">Avant de soumettre</p>
-          <ul>
-            {avertissements.map((a) => (
-              <li key={`${a.code}-${a.champ ?? ''}`}>{a.message}</li>
-            ))}
-          </ul>
-        </div>
-      )}
-    </div>
   );
 }

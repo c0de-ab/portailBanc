@@ -209,7 +209,7 @@ L'assistant s'ouvre dans un panneau latéral, sans quitter la page en cours : bo
 
 | Sujet | Choix |
 |---|---|
-| **Fournisseur** | Groq, pour son offre gratuite et l'appel d'outils. Modèle par défaut : `openai/gpt-oss-120b`, modifiable par `GROQ_MODEL`. L'interface `LlmClient` permet de changer de fournisseur sans toucher au reste |
+| **Fournisseur** | Groq, pour son offre gratuite et l'appel d'outils. Modèle par défaut : `openai/gpt-oss-120b`, modifiable par `GROQ_MODEL`. L'adresse est modifiable par `LLM_URL` : tout serveur compatible OpenAI, par exemple un modèle hébergé en interne, remplace Groq sans changement de code. L'interface `LlmClient` permet aussi de changer de fournisseur sans toucher au reste |
 | **Modes** | `LLM_MODE=mock` par défaut, partout : modèle simulé et déterministe, utilisé par les tests. `LLM_MODE=connecte` : API Groq, avec la clé dans `GROQ_API_KEY`, côté serveur seulement. Sans clé, l'API refuse de démarrer |
 | **Données transmises** | Les consignes, la description des quatre outils, les messages du client et les résultats d'outils. Ces résultats ne portent que sur le client connecté, et ceux qui sont trop longs sont résumés. **Jamais transmis :** les mots de passe, les justificatifs, les données d'un autre client, les recommandations internes. Toutes les données sont fictives |
 | **Délais** | 15 s au plus par appel au modèle |

@@ -1,6 +1,6 @@
 import type { Pool } from 'pg';
 import { LLM_CLIENT } from '../src/agent/llm-client';
-import { LlmGroq } from '../src/agent/llm-groq';
+import { ADRESSE_GROQ, LlmGroq } from '../src/agent/llm-groq';
 import type { ElementReponse } from '../src/agent/outils';
 import { executerTransaction } from '../src/base/transaction';
 import { creerComptesDemo } from '../src/demo/comptes-demo';
@@ -25,7 +25,7 @@ describe('Agent IA en mode connecté (Groq, réseau simulé)', () => {
 
   beforeAll(async () => {
     pool = creerPoolTest();
-    const groq = new LlmGroq('gsk_cle-factice', 'openai/gpt-oss-120b', fauxFetch);
+    const groq = new LlmGroq('gsk_cle-factice', 'openai/gpt-oss-120b', ADRESSE_GROQ, fauxFetch);
     appTest = await demarrerAppTest([], (c) => c.overrideProvider(LLM_CLIENT).useValue(groq));
   });
 

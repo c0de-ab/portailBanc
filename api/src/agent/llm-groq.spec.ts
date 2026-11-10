@@ -1,6 +1,6 @@
 import { creerModele } from './agent.module';
 import type { MessageModele } from './llm-client';
-import { ErreurGroq, LlmGroq } from './llm-groq';
+import { ADRESSE_GROQ, ErreurGroq, LlmGroq } from './llm-groq';
 import { LlmSimule } from './llm-simule';
 import { DESCRIPTIONS_OUTILS } from './outils';
 
@@ -48,7 +48,7 @@ describe('LlmGroq : la requête envoyée', () => {
       corps: { choices: [{ message: { content: 'Bonjour' } }] },
     });
 
-    await new LlmGroq(CLE, 'openai/gpt-oss-120b', appel).repondre({
+    await new LlmGroq(CLE, 'openai/gpt-oss-120b', ADRESSE_GROQ, appel).repondre({
       consignes: 'Consignes',
       messages: HISTORIQUE,
       outils: DESCRIPTIONS_OUTILS,
@@ -73,7 +73,7 @@ describe('LlmGroq : la requête envoyée', () => {
   it('convertit les messages : system, user, assistant avec tool_calls, tool sans champ name', async () => {
     const { appel, requetes } = fauxFetch({ corps: { choices: [{ message: { content: 'ok' } }] } });
 
-    await new LlmGroq(CLE, 'modele', appel).repondre({
+    await new LlmGroq(CLE, 'modele', ADRESSE_GROQ, appel).repondre({
       consignes: 'Consignes',
       messages: HISTORIQUE,
       outils: [],
@@ -102,7 +102,11 @@ describe('LlmGroq : la requête envoyée', () => {
 describe('LlmGroq : la réponse reçue', () => {
   async function repondre(corps: unknown) {
     const { appel } = fauxFetch({ corps });
-    return new LlmGroq(CLE, 'modele', appel).repondre({ consignes: '', messages: [], outils: [] });
+    return new LlmGroq(CLE, 'modele', ADRESSE_GROQ, appel).repondre({
+      consignes: '',
+      messages: [],
+      outils: [],
+    });
   }
 
   it('lit le texte et les appels d’outils, plusieurs dans la même réponse', async () => {
@@ -176,7 +180,7 @@ describe('LlmGroq : les erreurs', () => {
     async (status, type) => {
       const { appel } = fauxFetch({ status, corps: { error: { message: `détail ${CLE}`, type } } });
 
-      const promesse = new LlmGroq(CLE, 'modele', appel).repondre({
+      const promesse = new LlmGroq(CLE, 'modele', ADRESSE_GROQ, appel).repondre({
         consignes: '',
         messages: [],
         outils: [],
@@ -192,14 +196,14 @@ describe('LlmGroq : les erreurs', () => {
     const delai = Object.assign(new Error('signal timed out'), { name: 'TimeoutError' });
 
     await expect(
-      new LlmGroq(CLE, 'm', fauxFetch(delai).appel).repondre({
+      new LlmGroq(CLE, 'm', ADRESSE_GROQ, fauxFetch(delai).appel).repondre({
         consignes: '',
         messages: [],
         outils: [],
       }),
     ).rejects.toThrow('Délai dépassé (15 s).');
     await expect(
-      new LlmGroq(CLE, 'm', fauxFetch(new TypeError('fetch failed')).appel).repondre({
+      new LlmGroq(CLE, 'm', ADRESSE_GROQ, fauxFetch(new TypeError('fetch failed')).appel).repondre({
         consignes: '',
         messages: [],
         outils: [],
@@ -217,5 +221,35 @@ describe('Choix du modèle (LLM_MODE)', () => {
     expect(creerModele({ LLM_MODE: 'connecte', GROQ_API_KEY: CLE })).toBeInstanceOf(LlmGroq);
     expect(() => creerModele({ LLM_MODE: 'connecte' })).toThrow(/GROQ_API_KEY/);
     expect(() => creerModele({ LLM_MODE: 'autre' })).toThrow(/LLM_MODE inconnu/);
+  });
+});
+
+describe('Adresse du modèle (LLM_URL)', () => {
+  // Un serveur compatible OpenAI hébergé en interne : seule l'adresse change.
+  const ADRESSE_INTERNE = 'http://modele-interne:8000/v1/chat/completions';
+  const REPONSE = { choices: [{ message: { content: 'ok' } }] };
+  const ENTREE = { consignes: '', messages: [], outils: [] };
+
+  afterEach(() => jest.restoreAllMocks());
+
+  it('le client appelle l’adresse qu’on lui donne', async () => {
+    const { appel, requetes } = fauxFetch({ corps: REPONSE });
+
+    await new LlmGroq(CLE, 'modele', ADRESSE_INTERNE, appel).repondre(ENTREE);
+
+    expect(requetes[0].url).toBe(ADRESSE_INTERNE);
+  });
+
+  it('LLM_URL remplace l’adresse de Groq ; sans LLM_URL, Groq reste l’adresse par défaut', async () => {
+    // fetch global remplacé : aucun appel réseau.
+    const appel = jest
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(() => Promise.resolve(new Response(JSON.stringify(REPONSE))));
+
+    const connecte = { LLM_MODE: 'connecte', GROQ_API_KEY: CLE };
+    await creerModele({ ...connecte, LLM_URL: ADRESSE_INTERNE }).repondre(ENTREE);
+    await creerModele(connecte).repondre(ENTREE);
+
+    expect(appel.mock.calls.map(([url]) => url)).toEqual([ADRESSE_INTERNE, ADRESSE_GROQ]);
   });
 });

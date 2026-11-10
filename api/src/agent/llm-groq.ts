@@ -12,7 +12,9 @@ import {
 // Cette classe ne fait que traduire : la boucle, les garde-fous et TOUS les contrôles restent
 // dans l'agent et dans les services, quoi que le modèle réponde.
 
-const ADRESSE = 'https://api.groq.com/openai/v1/chat/completions';
+// Adresse par défaut : Groq. Tout serveur compatible OpenAI (par exemple un modèle hébergé en
+// interne) peut la remplacer par la variable LLM_URL, sans autre changement de code.
+export const ADRESSE_GROQ = 'https://api.groq.com/openai/v1/chat/completions';
 // Garde-fou : 1 024 tokens de réponse au plus.
 const TOKENS_MAXIMUM = 1024;
 
@@ -48,6 +50,7 @@ export class LlmGroq implements LlmClient {
   constructor(
     private readonly cle: string,
     private readonly modele: string,
+    private readonly adresse: string = ADRESSE_GROQ,
     // Remplaçable dans les tests : aucun test ne fait d'appel réseau.
     private readonly appelHttp: typeof fetch = fetch,
   ) {}
@@ -59,7 +62,7 @@ export class LlmGroq implements LlmClient {
   }): Promise<ReponseModele> {
     let reponse: Response;
     try {
-      reponse = await this.appelHttp(ADRESSE, {
+      reponse = await this.appelHttp(this.adresse, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${this.cle}` },
         body: JSON.stringify({
